@@ -4,16 +4,23 @@
 #include <vector>
 #include <stack>
 #include <string>
+#include <list>
 #include <stdexcept>
 #include "syntax.h"
+
+class Value;
 
 typedef int NameId;
 typedef std::string DefaultValueType;
 typedef size_t Address;
+typedef std::list<Value*> Tuple;
+
+
 
 enum class ValueTypes {
     Default,
     Address,
+    Tuple,
     Undefined
 };
 
@@ -30,6 +37,15 @@ class Value {
         Define(value);
         this->defined=defined;
     }
+    Value(Tuple *value, bool defined=true) {
+        Define(value);
+        this->defined=defined;
+    }
+    Value(Value *value) {
+        this->value = value->value;
+        this->defined = value->defined;
+        this->type = value->type;
+    }
     Value() {
         this->defined=false;
         type = ValueTypes::Undefined;
@@ -44,9 +60,11 @@ class Value {
         type = ValueTypes::Address;
         defined = true;
     }
-    void Define(const Value value) {
-        Define(&value);
-     }
+    void Define(Tuple *value) {
+        this->value = value;
+        type = ValueTypes::Tuple;
+        defined = true;
+    }
     void Define(const Value *value) {
         this->value = value->value;
         this->defined = value->defined;
@@ -56,6 +74,8 @@ class Value {
         return *(DefaultValueType*)value;
     }
     Address GetAddress() {
+        if (type!=ValueTypes::Address)
+            throw std::runtime_error("Exec: Call to non-address");
         return *(Address*)value;
     }
     friend std::ostream &operator<<(std::ostream &os, Value *v);
@@ -64,6 +84,13 @@ std::ostream &operator<<(std::ostream &os, Value *v) {
     switch (v->type) {
         case ValueTypes::Default: return os << v->GetValue();
         case ValueTypes::Address: return os << "<" << v->GetAddress() << ">";
+        case ValueTypes::Tuple: {
+            os << "(";
+            for (auto el: *(Tuple*)(v->value)) {
+                os << el << ", ";    
+            }
+            os << ")";
+        } return os;
         case ValueTypes::Undefined: return os << "?";
         default: return os << "???";
     }
@@ -133,7 +160,7 @@ class Execute {
 
         while (pointer < syntax->code.size()) {
             auto operation = syntax->code[pointer];
- // std::cout << *operation << " ";
+
             switch (operation->type) {
                 case OperationTypes::Operation:
                     switch (static_cast<Operations>(operation->operation)) {
@@ -178,6 +205,15 @@ class Execute {
                 case OperationTypes::NameLookup:
                     Push(context->GetValue(static_cast<NameId>(operation->operation), this->syntax->getName(operation->operation)));
                 break;
+                case OperationTypes::Tuple: {
+                    Tuple *t = new Tuple;
+                    for (int i=0;i<operation->operation;++i) {
+                        t->push_front(new Value(Pop()));
+                    }
+                    Push(new Value(t));
+                    //Value *v = new Value();
+                    //Push(new Value(static_cast<Address>(operation->operation)));
+                } break;
             }
             ++pointer;
         }

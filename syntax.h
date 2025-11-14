@@ -4,8 +4,8 @@
 #include <vector>
 #include <stack>
 #include <string>
-#include <stdexcept>
 #include <algorithm>
+#include <stdexcept>
 #include "lexic.h"
 
 #define VERBOSE true
@@ -15,23 +15,23 @@ enum class OperationTypes {
     Operation,
     NameLookup,
     Address,
+    Tuple,
 };
 
 enum class Actions {
     None=0, Name, Equate, Print,
     BeginFunction, EndFunction, Return, Plus, Minus, Multiply, Divide, Negative, 
     Pop,
-    FormTuple,
+    Tuple, TupleEmpty, TupleOne, TupleStart, TupleEnd,
     FunctionDefinition, 
     FunctionCall,
 };
 
 
 enum class Operations {
-    Push, Add, Equate, CreateContext, DestroyContext, Return, Jump, Call, Pop, Print
+    Add, Equate, CreateContext, DestroyContext, Return, Jump, Call, Pop, Print
 };
 std::map<Operations, std::string> str_operations = {
-    {Operations::Push, "Push"}, 
     {Operations::Add, "Add"}, 
     {Operations::Equate, "Equate"}, 
     {Operations::CreateContext, "CreateContext"}, 
@@ -45,15 +45,15 @@ std::map<Operations, std::string> str_operations = {
 
 class Operation {
     public:
-    int operation;
+    size_t operation;
     OperationTypes type;
-    Operation (OperationTypes type, int value) {
+    Operation (OperationTypes type, size_t value) {
         this->type = type;
         operation = value;
     }
     Operation (Operations value) {
         this->type = OperationTypes::Operation;
-        operation = static_cast<int>(value);
+        operation = static_cast<size_t>(value);
     }
     Operation () {
         this->type = OperationTypes::Empty;
@@ -65,31 +65,35 @@ std::ostream &operator<<(std::ostream &os, Operation const &o) {
         case OperationTypes::NameLookup: return os << "[" <<o.operation << "]";
         case OperationTypes::Address: return os << "<" <<o.operation << ">";
         case OperationTypes::Empty: return os << "[ ]";
-        default: return os << str_operations[static_cast<Operations>(o.operation)];
+        case OperationTypes::Operation: return os << str_operations[static_cast<Operations>(o.operation)];
+        case OperationTypes::Tuple: return os << "(" <<o.operation << ")";
+        default: return os << "???";
     }
 }
 
 enum class NonTerminals {
-    S, E, T, F, 
-    V, T1, T2, T3, T4,
+    S, E,
+    T0, T1, T2, T3, T4, V,
     Program,
     Expressions,
     Expression,
     BlockBegin, Block, 
     FunctionDefinition, 
     FunctionCall, 
-    Tuple, TupleItem
+    Tuple, 
 };
 std::map<NonTerminals, std::string> str_non_terminals = {
-    {NonTerminals::S, "S"}, {NonTerminals::E, "E"}, {NonTerminals::T, "T"}, {NonTerminals::F, "F"}, 
-    {NonTerminals::V, "V"}, {NonTerminals::T1, "T1"}, {NonTerminals::T2, "T2"}, {NonTerminals::T3, "T3"}, {NonTerminals::T4, "T4"},
+    {NonTerminals::S, "S"}, {NonTerminals::E, "E"}, 
+    {NonTerminals::T0, "T0"},  {NonTerminals::T1, "T1"}, {NonTerminals::T2, "T2"}, 
+    {NonTerminals::T3, "T3"}, {NonTerminals::T4, "T4"},
+    {NonTerminals::V, "V"}, 
     {NonTerminals::Program, "Program"},
     {NonTerminals::Expressions, "Expressions"},
     {NonTerminals::Expression, "Expression"},
     {NonTerminals::BlockBegin, "BlockBegin"}, {NonTerminals::Block, "Block"}, 
     {NonTerminals::FunctionDefinition, "FunctionDefinition"}, 
     {NonTerminals::FunctionCall, "FunctionCall"}, 
-    {NonTerminals::Tuple, "Tuple"}, {NonTerminals::TupleItem, "TupleItem"}
+    {NonTerminals::Tuple, "Tuple"}, 
 };
 
 class Symbol {
@@ -209,18 +213,20 @@ class SyntaxAnalys {
         {Symbol(NT::Block), {Symbol(NT::BlockBegin), Symbol("}")}, Actions::EndFunction},
 
         {Symbol(NT::FunctionDefinition), {Symbol(NT::Block)}},
-        {Symbol(NT::FunctionCall), {Symbol(">"), Symbol(NT::Block)}, Actions::FunctionCall},
-        {Symbol(NT::FunctionCall), {Symbol(NT::E), Symbol(">"), Symbol(NT::Block)}, Actions::FunctionCall},
-        {Symbol(NT::FunctionCall), {Symbol(">"), Symbol(NT::V)}, Actions::FunctionCall},
-        {Symbol(NT::FunctionCall), {Symbol(NT::E), Symbol(">"), Symbol(NT::V)}, Actions::FunctionCall},
+        {Symbol(NT::FunctionCall), {Symbol(">"), Symbol(NT::T3)}, Actions::FunctionCall},
+        {Symbol(NT::FunctionCall), {Symbol(NT::E), Symbol(">"), Symbol(NT::T3)}, Actions::FunctionCall},
+        // {Symbol(NT::FunctionCall), {Symbol(">"), Symbol(NT::V)}, Actions::FunctionCall},
+        // {Symbol(NT::FunctionCall), {Symbol(NT::E), Symbol(">"), Symbol(NT::V)}, Actions::FunctionCall},
 
-        {Symbol(NT::Tuple), {Symbol("("), Symbol(")")}},
-        {Symbol(NT::Tuple), {Symbol("("), Symbol(NT::E), Symbol(","), Symbol(")")}},
-        {Symbol(NT::Tuple), {Symbol(NT::E), Symbol(","), Symbol(NT::E)}},
-        {Symbol(NT::Tuple), {Symbol(NT::E), Symbol(","), NT::Tuple}},
+        
+        //{Symbol(NT::Tuple), {Symbol("("), Symbol(NT::E), Symbol(","), Symbol(")")}, Actions::Tuple1},
+        {Symbol(NT::Tuple), {Symbol(NT::E), Symbol(","), Symbol(NT::E)}, Actions::TupleStart},
+        {Symbol(NT::Tuple), {Symbol(NT::E), Symbol(","), NT::Tuple}, Actions::Tuple},
 
        
-        {Symbol(NT::E), {Symbol(NT::T1)}},
+        {Symbol(NT::E), {Symbol(NT::T0)}},
+
+        {Symbol(NT::T0), {Symbol(NT::T1)}},
 
         {Symbol(NT::T1), {Symbol(NT::T1), Symbol("+"), Symbol(NT::T2)}, Actions::Plus},
         {Symbol(NT::T1), {Symbol(NT::T1), Symbol("-"), Symbol(NT::T2)}, Actions::Minus},
@@ -233,17 +239,19 @@ class SyntaxAnalys {
         {Symbol(NT::T3), {Symbol("-"), Symbol(NT::T2)}, Actions::Negative},
         {Symbol(NT::T3), {Symbol("+"), Symbol(NT::T2)}},
         {Symbol(NT::T3), {Symbol(NT::T4)}},
+        {Symbol(NT::T3), {Symbol(":"), Symbol(NT::T3)}, Actions::Print},
         
-        {Symbol(NT::T4), {Symbol(NT::V), Symbol("="), Symbol(NT::E)}, Actions::Equate},
+        {Symbol(NT::T4), {Symbol(NT::V), Symbol("="), Symbol(NT::T0)}, Actions::Equate},
         {Symbol(NT::T4), {Symbol("("), Symbol(NT::E), Symbol(")")}},
         {Symbol(NT::T4), {Symbol(NT::FunctionDefinition)}},
         {Symbol(NT::T4), {Symbol(NT::FunctionCall)}},
-        {Symbol(NT::T4), {Symbol(":"), Symbol(NT::T3)}, Actions::Print},
         {Symbol(NT::T4), {Symbol(NT::V)}},
         
-
         {Symbol(NT::V), {Symbol(ID)}, Actions::Name},
-        {Symbol(NT::V), {Symbol(NT::Tuple)}, Actions::FormTuple},
+        {Symbol(NT::V), {Symbol(NT::Tuple)}, Actions::TupleEnd},
+        {Symbol(NT::V), {Symbol("("), Symbol(NT::Tuple), Symbol(")")}, Actions::TupleEnd},
+        {Symbol(NT::V), {Symbol("("), Symbol(")")}, Actions::TupleEmpty},
+        {Symbol(NT::V), {Symbol("("), Symbol(NT::E), Symbol(","), Symbol(")")}, Actions::TupleOne},
 
 
 //    E   :-  V = E     |   T1
@@ -273,10 +281,13 @@ class SyntaxAnalys {
     };
 
     std::vector<Symbol*> stack;
+    std::vector<std::string> names_lookup;
     std::stack<Token*> names_stack;
+    std::stack<size_t> function_definitions;
+    std::stack<size_t> tuples_stack;
 
-    void RunAction(Actions action) {
-        switch (action) {
+    void RunAction(size_t rule_id) {
+        switch (rules[rule_id].action) {
             case Actions::Name: {
                 std::string name = names_stack.top()->Value();
                 auto it = std::find(names_lookup.begin(), names_lookup.end(), name);
@@ -289,7 +300,35 @@ class SyntaxAnalys {
                 }
                 code.push_back(new Operation(OperationTypes::NameLookup, name_index));
                 names_stack.pop();
-            } break; 
+            } break;
+            case Actions::TupleEmpty: 
+                std::cout << "[[Tuple0]]";
+                code.push_back(new Operation(OperationTypes::Tuple, 0));
+            break;
+            case Actions::TupleOne:
+                std::cout << "[[Tuple0]]";
+                code.push_back(new Operation(OperationTypes::Tuple, 1));
+            break;
+            case Actions::TupleStart: {
+                tuples_stack.push(2);
+            } break;
+            case Actions::Tuple: {
+                size_t tuple_size = tuples_stack.top()+1;
+                tuples_stack.pop();
+                tuples_stack.push(tuple_size);
+                // Operation *tuple = code.back();
+                // if (tuple->type!=OperationTypes::Tuple) {
+                //     std::cout << "[["<<rule_id<<"Tuple1]]";
+                //     code.push_back(new Operation(OperationTypes::Tuple, 1));
+                //     break;
+                // }
+                // tuple->operation++;
+                // std::cout << "[["<<rule_id<<"Tuple" <<tuple->operation << "]]";
+            } break;
+            case Actions::TupleEnd: {
+                code.push_back(new Operation(OperationTypes::Tuple, tuples_stack.top()));
+                tuples_stack.pop();
+            } break;
             case Actions::Pop: 
                 code.push_back(new Operation(Operations::Pop));
             break;            
@@ -361,7 +400,7 @@ class SyntaxAnalys {
                     stack.resize(i);
                     stack.push_back(&rules[r].left);
 
-                    RunAction(rules[r].action);
+                    RunAction(r);
 
                     return(false);
                 }
@@ -374,9 +413,6 @@ class SyntaxAnalys {
         return(true);
 
     }
-
-    std::vector<std::string> names_lookup;
-    std::stack<size_t> function_definitions;
 
     public:
     std::vector<Operation*> code;
