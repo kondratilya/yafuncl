@@ -15,8 +15,6 @@ typedef std::string DefaultValueType;
 typedef size_t Address;
 typedef std::list<Value*> Tuple;
 
-
-
 enum class ValueTypes {
     Default,
     Address,
@@ -27,8 +25,13 @@ enum class ValueTypes {
 class Value {
     void *value;
     bool defined;
+    bool lvalue=false;
+    bool plain_tuple=false;
     ValueTypes type;
     public:
+    bool GetLValue() { return lvalue; }
+    void SetLValue(bool lvalue) { this->lvalue=lvalue; }
+
     Value(DefaultValueType value, bool defined=true) {
         Define(value);
         this->defined=defined;
@@ -45,6 +48,7 @@ class Value {
         this->value = value->value;
         this->defined = value->defined;
         this->type = value->type;
+        this->lvalue = value->lvalue;
     }
     Value() {
         this->defined=false;
@@ -54,21 +58,26 @@ class Value {
         this->value = new DefaultValueType(value);
         type = ValueTypes::Default;
         defined = true;
+        plain_tuple = false;
     }
     void Define(const Address value) {
         this->value = new Address(value);
         type = ValueTypes::Address;
         defined = true;
+        plain_tuple = false;
     }
-    void Define(Tuple *value) {
+    void Define(Tuple *value, bool plain=true) {
         this->value = value;
         type = ValueTypes::Tuple;
         defined = true;
+        plain_tuple = plain;
     }
     void Define(const Value *value) {
         this->value = value->value;
         this->defined = value->defined;
         this->type = value->type;
+        this->lvalue = value->lvalue;
+        plain_tuple = false;
     }
     DefaultValueType GetValue() {
         return *(DefaultValueType*)value;
@@ -81,6 +90,8 @@ class Value {
     friend std::ostream &operator<<(std::ostream &os, Value *v);
 };
 std::ostream &operator<<(std::ostream &os, Value *v) { 
+    if (v->GetLValue())os << "l";
+    if (v->plain_tuple)os << "t";
     switch (v->type) {
         case ValueTypes::Default: return os << v->GetValue();
         case ValueTypes::Address: return os << "<" << v->GetAddress() << ">";
@@ -97,101 +108,99 @@ std::ostream &operator<<(std::ostream &os, Value *v) {
 }
 
 class Context {
-    Context *parent;
+    Code *code;
+    Context *parent = NULL;
+    SyntaxAnalys *syntax;
     std::map<NameId, Value*> lookup;
-    Value *Search(NameId id) {
+    std::stack<Value*> stack;
+    Address pointer = 0;
+    Value *result;
+
+    Value *SearchVariable(NameId id) {
         if (auto search = lookup.find(id); search != lookup.end()) {
             return search->second;
         } else {
             if (this->parent) {
-                return this->parent->Search(id);
+                return this->parent->SearchVariable(id);
             } else {
                 return NULL;
             }
         }
     }
-    public:
-    Context(Context *parent) {
+    Context(Context *parent, Address position=0, Value* arg=NULL) {
         this->parent = parent;
+        this->code = parent->code;
+        this->syntax = parent->syntax;
         this->result = new Value("ZERO");
+        this->pointer = position;
+        Push(arg);
     }
-    Value *GetValue(NameId id, std::string value="") {
-        Value* val = this->Search(id);
+    Value *GetVariable(NameId id, std::string value="") {
+        Value* val = this->SearchVariable(id);
         if (val) return val;
         val = new Value(static_cast<DefaultValueType>(value), false);
+        val->SetLValue(true);
         lookup[id] = val;
         return val;
     }
     Context *Parent() {
         return parent;
     }
-    Value *result;
-};
-
-class Execute {
-    std::stack<Value*> stack;
-    SyntaxAnalys *syntax;
     Value* Pop() {
+        if (!stack.size()) 
+            return new Value();
         Value *v = stack.top();
         stack.pop();
         return v;
     }
     void Push(Value *v) {
+        if (!v) return;
         stack.push(v);
     }
     Value* Top() {
+        if (!stack.size()) 
+            return new Value();
         return stack.top();
     }
+
     public:
-    Execute(SyntaxAnalys *syntax) {
+    Context(Code *code, SyntaxAnalys *syntax=NULL, Address position=0) {
+        this->code = code;
+        this->pointer = position;
+        this->parent = NULL;
+        this->result = new Value("ZERO");
         this->syntax = syntax;
-        syntax->Analyse();
     }
-    void Run() {
-        Context *context=NULL;
-        std::stack<Address> call_stack;
-
-        for (auto operation : syntax->code) {
-            std::cout << *operation << " ";
-        }
-        std::cout << std::endl;
-
-        size_t pointer=0;
-
-        while (pointer < syntax->code.size()) {
-            auto operation = syntax->code[pointer];
+    Value *Run() {
+        while (pointer < code->size()) {
+            auto operation = (*code)[pointer];
 
             switch (operation->type) {
                 case OperationTypes::Operation:
                     switch (static_cast<Operations>(operation->operation)) {
-                        case Operations::CreateContext:
-                            context = new Context(context);
-                        break;
-                        case Operations::DestroyContext: {
-                            Context *parent = context->Parent();
-                            Push(context->result);
-                            delete context;
-                            context = parent;
-                        } break;
                         case Operations::Jump:
                             pointer = Pop()->GetAddress();
                         continue;
                         case Operations::Call:
-                            call_stack.push(pointer);
-                            pointer = Pop()->GetAddress();
+                            Push((new Context(this, Pop()->GetAddress()))->Run());
+                        break;
                         continue;
+                        case Operations::CallArg: {
+                            Address address = Pop()->GetAddress();
+                            Value *value = Pop();
+                            Push((new Context(this, address, value))->Run());
+                        } break;
                         case Operations::Return:
-                            pointer = call_stack.top()+1;
-                            call_stack.pop();
-                        continue;
+                            return result;
                         case Operations::Pop:
-                            context->result = Pop();
+                            result = Pop();
                         break;
                         case Operations::Add: 
                             Push(new Value(Pop()->GetValue()+Pop()->GetValue()));
                         break;
                         case Operations::Equate: {
                             Value *v = Pop();
+                            // Value *v1 = Top();
                             Top()->Define(v);
                         } break;
                         case Operations::Print: {
@@ -203,19 +212,42 @@ class Execute {
                     Push(new Value(static_cast<Address>(operation->operation)));
                 break;
                 case OperationTypes::NameLookup:
-                    Push(context->GetValue(static_cast<NameId>(operation->operation), this->syntax->getName(operation->operation)));
+                    if (syntax) {
+                        Push(GetVariable(static_cast<NameId>(operation->operation), this->syntax->getName(operation->operation)));
+                    } else {
+                        Push(GetVariable(static_cast<NameId>(operation->operation)));
+                    }
                 break;
                 case OperationTypes::Tuple: {
                     Tuple *t = new Tuple;
                     for (int i=0;i<operation->operation;++i) {
                         t->push_front(new Value(Pop()));
                     }
-                    Push(new Value(t));
-                    //Value *v = new Value();
-                    //Push(new Value(static_cast<Address>(operation->operation)));
+                    Value*v = new Value(t);
+                    v->SetLValue(true);
+                    Push(v);
                 } break;
             }
             ++pointer;
         }
+        return new Value();
     }
+};
+
+class Execute {
+    SyntaxAnalys *syntax;
+
+    public:
+    Execute(SyntaxAnalys *syntax) {
+        this->syntax = syntax;
+        syntax->Analyse();
+        for (auto operation : *syntax->code) {
+            std::cout << *operation << " ";
+        }
+        std::cout << std::endl;
+    }
+    Value *Run() {
+        return (new Context(syntax->code, syntax))->Run();
+    }
+    
 };

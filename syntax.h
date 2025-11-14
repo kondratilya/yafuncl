@@ -3,6 +3,7 @@
 #include <istream>
 #include <vector>
 #include <stack>
+#include <set>
 #include <string>
 #include <algorithm>
 #include <stdexcept>
@@ -24,23 +25,22 @@ enum class Actions {
     Pop,
     Tuple, TupleEmpty, TupleOne, TupleStart, TupleEnd,
     FunctionDefinition, 
-    FunctionCall,
+    FunctionCall, FunctionCallArg,
 };
 
 
 enum class Operations {
-    Add, Equate, CreateContext, DestroyContext, Return, Jump, Call, Pop, Print
+    Add, Equate, Return, Jump, Call, CallArg, Pop, Print
 };
 std::map<Operations, std::string> str_operations = {
     {Operations::Add, "Add"}, 
     {Operations::Equate, "Equate"}, 
-    {Operations::CreateContext, "CreateContext"}, 
-    {Operations::DestroyContext, "DestroyContext"}, 
     {Operations::Return, "Return"}, 
     {Operations::Jump, "Jump"}, 
     {Operations::Call, "Call"}, 
+    {Operations::CallArg, "CallArg"}, 
     {Operations::Pop, "Pop"}, 
-    {Operations::Print, "Print"}
+    {Operations::Print, "Print"},
 };
 
 class Operation {
@@ -70,6 +70,8 @@ std::ostream &operator<<(std::ostream &os, Operation const &o) {
         default: return os << "???";
     }
 }
+
+typedef std::vector<Operation*> Code;
 
 enum class NonTerminals {
     S, E,
@@ -106,10 +108,10 @@ class Symbol {
     
     public:
 
-    Symbol(std::string name) {
+    Symbol(std::string terminal) {
         is_terminal = true;
-        this->name = name;
-    }    
+        this->name = terminal;
+    }
     Symbol(NonTerminals non_terminal) {
         is_terminal = false;
         this->non_terminal = non_terminal;
@@ -213,8 +215,8 @@ class SyntaxAnalys {
         {Symbol(NT::Block), {Symbol(NT::BlockBegin), Symbol("}")}, Actions::EndFunction},
 
         {Symbol(NT::FunctionDefinition), {Symbol(NT::Block)}},
-        {Symbol(NT::FunctionCall), {Symbol(">"), Symbol(NT::T3)}, Actions::FunctionCall},
-        {Symbol(NT::FunctionCall), {Symbol(NT::E), Symbol(">"), Symbol(NT::T3)}, Actions::FunctionCall},
+        {Symbol(NT::FunctionCall), {Symbol("=>"), Symbol(NT::T3)}, Actions::FunctionCall},
+        {Symbol(NT::FunctionCall), {Symbol(NT::E), Symbol("=>"), Symbol(NT::T3)}, Actions::FunctionCallArg},
         // {Symbol(NT::FunctionCall), {Symbol(">"), Symbol(NT::V)}, Actions::FunctionCall},
         // {Symbol(NT::FunctionCall), {Symbol(NT::E), Symbol(">"), Symbol(NT::V)}, Actions::FunctionCall},
 
@@ -248,6 +250,7 @@ class SyntaxAnalys {
         {Symbol(NT::T4), {Symbol(NT::V)}},
         
         {Symbol(NT::V), {Symbol(ID)}, Actions::Name},
+        {Symbol(NT::V), {Symbol("arguments")}},
         {Symbol(NT::V), {Symbol(NT::Tuple)}, Actions::TupleEnd},
         {Symbol(NT::V), {Symbol("("), Symbol(NT::Tuple), Symbol(")")}, Actions::TupleEnd},
         {Symbol(NT::V), {Symbol("("), Symbol(")")}, Actions::TupleEmpty},
@@ -298,16 +301,16 @@ class SyntaxAnalys {
                 } else {
                     name_index = std::distance(names_lookup.begin(), it);
                 }
-                code.push_back(new Operation(OperationTypes::NameLookup, name_index));
+                code->push_back(new Operation(OperationTypes::NameLookup, name_index));
                 names_stack.pop();
             } break;
             case Actions::TupleEmpty: 
                 std::cout << "[[Tuple0]]";
-                code.push_back(new Operation(OperationTypes::Tuple, 0));
+                code->push_back(new Operation(OperationTypes::Tuple, 0));
             break;
             case Actions::TupleOne:
                 std::cout << "[[Tuple0]]";
-                code.push_back(new Operation(OperationTypes::Tuple, 1));
+                code->push_back(new Operation(OperationTypes::Tuple, 1));
             break;
             case Actions::TupleStart: {
                 tuples_stack.push(2);
@@ -316,48 +319,49 @@ class SyntaxAnalys {
                 size_t tuple_size = tuples_stack.top()+1;
                 tuples_stack.pop();
                 tuples_stack.push(tuple_size);
-                // Operation *tuple = code.back();
+                // Operation *tuple = code->back();
                 // if (tuple->type!=OperationTypes::Tuple) {
                 //     std::cout << "[["<<rule_id<<"Tuple1]]";
-                //     code.push_back(new Operation(OperationTypes::Tuple, 1));
+                //     code->push_back(new Operation(OperationTypes::Tuple, 1));
                 //     break;
                 // }
                 // tuple->operation++;
                 // std::cout << "[["<<rule_id<<"Tuple" <<tuple->operation << "]]";
             } break;
             case Actions::TupleEnd: {
-                code.push_back(new Operation(OperationTypes::Tuple, tuples_stack.top()));
+                code->push_back(new Operation(OperationTypes::Tuple, tuples_stack.top()));
                 tuples_stack.pop();
             } break;
             case Actions::Pop: 
-                code.push_back(new Operation(Operations::Pop));
+                code->push_back(new Operation(Operations::Pop));
             break;            
             case Actions::Plus: 
-                code.push_back(new Operation(Operations::Add));
+                code->push_back(new Operation(Operations::Add));
             break;
             case Actions::Equate: 
-                code.push_back(new Operation(Operations::Equate));
+                code->push_back(new Operation(Operations::Equate));
             break;
             case Actions::Print: 
-                code.push_back(new Operation(Operations::Print));
+                code->push_back(new Operation(Operations::Print));
             break;
             case Actions::BeginFunction: 
-                function_definitions.push(code.size());
-                code.push_back(new Operation());
-                code.push_back(new Operation(Operations::Jump));
-                code.push_back(new Operation(Operations::CreateContext));
+                function_definitions.push(code->size());
+                code->push_back(new Operation());
+                code->push_back(new Operation(Operations::Jump));
             break;
             case Actions::EndFunction: { 
                 size_t function_start = function_definitions.top();
                 function_definitions.pop();
-                code.push_back(new Operation(Operations::DestroyContext));
-                code.push_back(new Operation(Operations::Return));
-                code[function_start]->type = OperationTypes::Address;
-                code[function_start]->operation = code.size();
-                code.push_back(new Operation(OperationTypes::Address, function_start+2));
+                code->push_back(new Operation(Operations::Return));
+                (*code)[function_start]->type = OperationTypes::Address;
+                (*code)[function_start]->operation = code->size();
+                code->push_back(new Operation(OperationTypes::Address, function_start+2));
             } break;
             case Actions::FunctionCall: 
-                code.push_back(new Operation(Operations::Call));
+                code->push_back(new Operation(Operations::Call));
+            break;
+            case Actions::FunctionCallArg:
+                code->push_back(new Operation(Operations::CallArg));
             break;
         }
     }
@@ -415,7 +419,7 @@ class SyntaxAnalys {
     }
 
     public:
-    std::vector<Operation*> code;
+    Code *code;
 
     std::string getName(int id) {
         return names_lookup[id];
@@ -423,6 +427,7 @@ class SyntaxAnalys {
 
     SyntaxAnalys(LexicAnalys *lexic) {
         this->lexic = lexic;
+        code = new Code;
     };
     bool Analyse() {
         if (done) {
@@ -432,7 +437,7 @@ class SyntaxAnalys {
         Token *R;
         Symbol *S;
 
-        code.push_back(new Operation(Operations::CreateContext));
+        // code->push_back(new Operation(Operations::CreateContext));
         while(true){
             if(to_read) {
                 R = this->lexic->Get();
@@ -454,7 +459,7 @@ class SyntaxAnalys {
 #endif
 
             if(stack.size()==1 && stack[0]->IsRoot()) {
-                code.push_back(new Operation(Operations::DestroyContext));
+                // code->push_back(new Operation(Operations::DestroyContext));
                 done = true;            
                 return true;
 

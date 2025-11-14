@@ -3,12 +3,18 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <set>
 #include <stdexcept>
 #include <format>
 
 const std::string END = "$$end$$";
 const std::string ID = "$$id$$";
 const std::string EMPTY = "$$empty$$";
+
+const std::set<std::string> keywords = {
+    "arguments",
+    ":", "(", ")", ";", "{", "}", "=>", ",", "+", "-", "*", "/", "="
+};
 
 class Token {
     std::string id;
@@ -43,34 +49,32 @@ class LexicAnalys {
         Error,
         Name,
         Operator,
-        Comment1,
-        Comment2,
+        Comment,
 
     };
     enum class Terminals {
         Letter = 0,
         Operator,
         Space,
-        Slash,
+        Comment,
         NewLine,
         Eof,
     };
     std::istream *stream;
     std::vector<std::vector<States>> rules = {
-        //Letter            Operator           Space              Slash             NewLine        Eof
-        {States::Name     , States::Operator , States::Start   , States::Comment1 , States::Start, States::End  }, // Start,
+        //Letter            Operator           Space             Comment             NewLine        Eof
+        {States::Name     , States::Operator , States::Start   , States::Comment  , States::Start, States::End  }, // Start,
         {States::Error    , States::Error    , States::Error   , States::Error    , States::Error, States::Error}, // End,
         {States::Error    , States::Error    , States::Error   , States::Error    , States::Error, States::Error}, // Error,
         {States::Name     , States::Start    , States::Start   , States::Start    , States::Start, States::Start}, // Word,
-        {States::Start    , States::Start    , States::Start   , States::Start    , States::Start, States::Start}, // Operator,
-        {States::Start    , States::Start    , States::Start   , States::Comment2 , States::Start, States::Start}, // Comment1,
-        {States::Comment2 , States::Comment2 , States::Comment2, States::Comment2 , States::Start, States::Start}, // Comment2,
+        {States::Start    , States::Operator , States::Start   , States::Start    , States::Start, States::Start}, // Operator,
+        {States::Comment  , States::Comment  , States::Comment , States::Comment  , States::Start, States::Start}, // Comment1,
     };
     std::map<Terminals, std::string> terminals = {
         {Terminals::Letter, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_"}, 
-        {Terminals::Operator, "~`!@#$%^&*()[]{}-=+;:|\\.,\"'?<>"}, 
+        {Terminals::Operator, "~`!@/$%^&*()[]{}-=+;:|\\.,\"'?<>"}, 
         {Terminals::Space, " \t\r"}, 
-        {Terminals::Slash, "/"}, 
+        {Terminals::Comment, "#"}, 
         {Terminals::NewLine, "\n"}
     };
     Terminals terminal(int c) {
@@ -109,8 +113,17 @@ class LexicAnalys {
                         this->stream->unget();
                         switch (ostate) {
                             case States::Name:
+                                if (keywords.count(buffer))
+                                    return new Token(buffer);
                                 return new Token(ID, buffer);
                             case States::Operator:
+                                while (!buffer.empty() && !keywords.count(buffer)) {
+                                    buffer.pop_back();
+                                    this->stream->unget();
+                                }
+                                if (buffer.empty()){
+                                    throw std::runtime_error("Lexic: Unknown operator");
+                                }
                                 if (buffer == "}") {  // Fake expression, for ';'
                                     double_token = new Token(buffer);
                                     return new Token(EMPTY);
@@ -127,7 +140,7 @@ class LexicAnalys {
                     double_token = new Token(END);  // Fake expression, for ';'
                     return new Token(EMPTY);
                 break;
-                case States::Comment2:
+                case States::Comment:
                 break;
                 default:
                     buffer += symbol;
