@@ -5,44 +5,11 @@
 #include <map>
 #include <set>
 #include <stdexcept>
-#include <format>
+#include "tokens.h"
 
-const std::string END = "$$end$$";
-const std::string ID = "$$id$$";
-const std::string EMPTY = "$$empty$$";
-
-const std::set<std::string> keywords = {
-    "arguments",
-    ":", "(", ")", ";", "{", "}", "=>", ",", "+", "-", "*", "/", "="
-};
-
-class Token {
-    std::string id;
-    std::string value;
-    public:
-    Token(std::string id, std::string value="") {
-        this->id = id;
-        this->value = value;
-    }
-    std::string Id(){
-        return this->id;
-    }
-    std::string Value(){
-        return this->value;
-    }
-    bool IsName() {
-        return id == ID;
-    }
-    bool operator== (Token *T) {
-        return this->id == T->id;
-    }
-    bool operator!= (Token *T) {
-        return !(*this == T);
-    }
-};
+using namespace Tokens;
 
 class LexicAnalys {
-
     enum class States {
         Start = 0,
         End,
@@ -50,7 +17,6 @@ class LexicAnalys {
         Name,
         Operator,
         Comment,
-
     };
     enum class Terminals {
         Letter = 0,
@@ -60,8 +26,7 @@ class LexicAnalys {
         NewLine,
         Eof,
     };
-    std::istream *stream;
-    std::vector<std::vector<States>> rules = {
+    const std::vector<std::vector<States>> rules = {
         //Letter            Operator           Space             Comment             NewLine        Eof
         {States::Name     , States::Operator , States::Start   , States::Comment  , States::Start, States::End  }, // Start,
         {States::Error    , States::Error    , States::Error   , States::Error    , States::Error, States::Error}, // End,
@@ -70,86 +35,33 @@ class LexicAnalys {
         {States::Start    , States::Operator , States::Start   , States::Start    , States::Start, States::Start}, // Operator,
         {States::Comment  , States::Comment  , States::Comment , States::Comment  , States::Start, States::Start}, // Comment1,
     };
-    std::map<Terminals, std::string> terminals = {
+    const std::map<Terminals, std::string> terminals = {
         {Terminals::Letter, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_"}, 
         {Terminals::Operator, "~`!@/$%^&*()[]{}-=+;:|\\.,\"'?<>"}, 
         {Terminals::Space, " \t\r"}, 
         {Terminals::Comment, "#"}, 
         {Terminals::NewLine, "\n"}
     };
+    const std::set<std::string> keywords = {
+        "arguments",
+        ":", "(", ")", ";", "{", "}", "=>", ",", "+", "-", "*", "/", "="
+    };
+
     Terminals terminal(int c) {
-        if (c < 0) { //!!!!
-            return Terminals::Eof;
+        if (c < 0) { 
+            return Terminals::Eof; 
         }
         for (auto const& term : terminals) {
-            if (term.second.find(static_cast<char>(c)) != std::string::npos) return term.first;
+            if (term.second.find(static_cast<char>(c)) != std::string::npos)
+                return term.first;
         }
         throw std::runtime_error("Lexic: Unknown symbol");
     }
+
+    std::istream *stream;
     Token *double_token = NULL;
+
     public:
-    LexicAnalys(std::istream *stream) {
-        this->stream = stream;
-    };
-    Token *Get() {
-        States state = States::Start, ostate = States::Start;
-        std::string buffer;
-
-        if (double_token) {
-            Token *ret = double_token;
-            double_token = NULL;
-            return ret;
-        }
-
-        while (true) {
-            int symbol;
-
-            Terminals term = this->terminal(symbol = this->stream->get());
-            state = rules[static_cast<int>(state)][static_cast<int>(term)];
-
-            switch (state) {
-                case States::Start: 
-                    if (ostate != States::Start) {
-                        this->stream->unget();
-                        switch (ostate) {
-                            case States::Name:
-                                if (keywords.count(buffer))
-                                    return new Token(buffer);
-                                return new Token(ID, buffer);
-                            case States::Operator:
-                                while (!buffer.empty() && !keywords.count(buffer)) {
-                                    buffer.pop_back();
-                                    this->stream->unget();
-                                }
-                                if (buffer.empty()){
-                                    throw std::runtime_error("Lexic: Unknown operator");
-                                }
-                                if (buffer == "}") {  // Fake expression, for ';'
-                                    double_token = new Token(buffer);
-                                    return new Token(EMPTY);
-                                }
-                                return new Token(buffer);
-                            default: 
-                                buffer = "";
-                        }
-                    }
-                break;
-                case States::Error: 
-                    throw std::runtime_error("Lexic: Unexpected symbol");
-                case States::End: 
-                    double_token = new Token(END);  // Fake expression, for ';'
-                    return new Token(EMPTY);
-                break;
-                case States::Comment:
-                break;
-                default:
-                    buffer += symbol;
-            }
-
-            ostate = state;
-        }
-        
-    }
-
-    
+    LexicAnalys(std::istream &stream) { this->stream = &stream; };
+    Token *Get();
 };
