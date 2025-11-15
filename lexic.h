@@ -6,6 +6,7 @@
 #include <set>
 #include <stdexcept>
 #include "tokens.h"
+#include "rules.h"
 
 using namespace Tokens;
 
@@ -42,10 +43,7 @@ class LexicAnalys {
         {Terminals::Comment, "#"}, 
         {Terminals::NewLine, "\n"}
     };
-    const std::set<std::string> keywords = {
-        "arguments",
-        ":", "(", ")", ";", "{", "}", "=>", ",", "+", "-", "*", "/", "="
-    };
+    std::set<std::string> keywords = {};
 
     Terminals terminal(int c) {
         if (c < 0) { 
@@ -62,6 +60,10 @@ class LexicAnalys {
     Token *double_token = NULL;
 
     public:
-    LexicAnalys(std::istream &stream) { this->stream = &stream; };
+    LexicAnalys(std::istream &stream) { 
+        Rules r;
+        r.GetTerminalsList(keywords);
+        this->stream = &stream; 
+    };
     Token *Get();
 };

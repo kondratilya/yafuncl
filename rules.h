@@ -1,4 +1,5 @@
 #pragma once
+#include <set>
 #include "symbols.h"
 
 using namespace Symbols;
@@ -29,7 +30,8 @@ namespace RulesList {
         {Symbol(NT::Expressions), {Symbol(NT::Expression)}},
 
         {Symbol(NT::Expression), {Symbol(NT::E)}, Actions::Pop},
-        {Symbol(NT::Expression), {Symbol(EMPTY)}},
+        {Symbol(NT::Expression), {Symbol(Tokens::EMPTY)}},
+        
         {Symbol(NT::BlockBegin), {Symbol("{")}, Actions::BeginFunction},
         {Symbol(NT::Block), {Symbol(NT::BlockBegin), Symbol(NT::Expressions), Symbol("}")}, Actions::EndFunction},
         {Symbol(NT::Block), {Symbol(NT::BlockBegin), Symbol("}")}, Actions::EndFunction},
@@ -64,7 +66,7 @@ namespace RulesList {
         {Symbol(NT::T4), {Symbol(NT::FunctionCall)}},
         {Symbol(NT::T4), {Symbol(NT::V)}},
         
-        {Symbol(NT::V), {Symbol(ID)}, Actions::Name},
+        {Symbol(NT::V), {Symbol(Tokens::ID)}, Actions::Name},
         {Symbol(NT::V), {Symbol("arguments")}},
         {Symbol(NT::V), {Symbol(NT::Tuple)}, Actions::TupleEnd},
         {Symbol(NT::V), {Symbol("("), Symbol(NT::Tuple), Symbol(")")}, Actions::TupleEnd},
@@ -117,4 +119,12 @@ class Rules {
     const size() {
         return _size;
     };
+    void GetTerminalsList(std::set<std::string> &keywords){
+        for (auto r : RulesList::rules) {
+            for (auto s : r.right) {
+                if (s.IsTerminal())
+                    keywords.insert(s.name);
+            }
+        }
+    }
 };

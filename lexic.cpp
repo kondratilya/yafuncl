@@ -1,10 +1,5 @@
 #include "lexic.h"
 
-const std::set<std::string> keywords = {
-    "arguments",
-    ":", "(", ")", ";", "{", "}", "=>", ",", "+", "-", "*", "/", "="
-};
-
 using namespace Tokens;
 
 Token *LexicAnalys::Get() {
