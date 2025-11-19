@@ -11,14 +11,17 @@ typedef size_t VariableId;
 
 #define VERBOSE true
 
+
+
 class SyntaxAnalys {
     Rules rules;
     LexicAnalys *lexic;
-    bool done = false;
 
     std::vector<Symbol*> stack;
+    std::vector<size_t> heads;
+
     std::vector<std::string> names_lookup;
-    std::stack<Token*> names_stack;
+    std::stack<std::string> names_stack;
     std::stack<size_t> function_definitions;
     std::stack<size_t> tuples_stack;
 
@@ -30,7 +33,10 @@ class SyntaxAnalys {
 
     std::string getName(VariableId id) { return names_lookup[id]; }
 
-    SyntaxAnalys(LexicAnalys &lexic) { this->lexic = &lexic; };
+    SyntaxAnalys(LexicAnalys &lexic) { 
+        this->lexic = &lexic; 
+        names_lookup.push_back("arguments");
+    };
 
     bool Analyse();
     

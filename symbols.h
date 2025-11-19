@@ -5,14 +5,19 @@
 namespace Symbols {
     enum class NonTerminals {
         ROOT, E,
-        T0, T1, T2, T3, T4, V,
+        T0, T1, T2, T3, T4,
+        T5, T6, T7, T8, T9,
+        T10, T11, T12, T13,
+        LVALUE,           // Может быть слева от =
+        NAME,             // Имя переменной
         Program,
         Expressions,
         Expression,
         BlockBegin, Block, 
-        FunctionDefinition, 
         FunctionCall, 
+        FunctionDefinition, 
         Tuple, 
+        Modifyers, Modifyer,
     };
 
     class Symbol {
@@ -58,6 +63,11 @@ namespace Symbols {
         }
         bool operator!= (const Symbol &S) const { return !(*this == S); }
     };
-    
+
+    inline bool operator==(Symbol* s1, const Symbols::Symbol s2){
+        return s1->operator==(s2);
+    }
 }
+
+
 std::ostream &operator<<(std::ostream &os, Symbols::Symbol &s);

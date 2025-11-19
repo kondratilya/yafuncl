@@ -15,28 +15,29 @@ Value *Context::SearchVariable(VariableId id) {
     }
 }
 
-Context::Context(Context *parent, Address position, Value* arg) {
-    this->parent = parent;
-    this->syntax = parent->syntax;
-    this->result = new Value("ZERO");
-    this->pointer = position;
-    Push(arg);
-}
-
-Context::Context(SyntaxAnalys &syntax, Address position) {
-    this->syntax = &syntax;
-    this->pointer = position;
-    this->parent = NULL;
-    this->result = new Value("ZERO");
+Value *Context::CreateVariable(VariableId id/*, std::set<Modifyers> modifyers*/, std::string value) {
+    Value* val = new Value(static_cast<DefaultValueType>(value));
+    val->RemoveModifyers({Modifyers::Defined})->SetModifyers({Modifyers::Lvalue});
+    lookup[id] = val;
+    return val;
 }
 
 Value *Context::GetVariable(VariableId id, std::string value) {
     Value* val = this->SearchVariable(id);
     if (val) return val;
-    val = new Value(static_cast<DefaultValueType>(value), false);
-    val->SetLValue(true);
-    lookup[id] = val;
-    return val;
+    return CreateVariable(id, value);
+}
+
+Context::Context(Context *parent, Address position, Value* arg): Context(*(parent->syntax), position, arg) {
+     this->parent = parent;
+}
+
+Context::Context(SyntaxAnalys &syntax, Address position, Value* arg) {
+    this->parent = NULL;
+    this->syntax = &syntax;
+    this->pointer = position;
+    this->result = new Value("ZERO");
+    CreateVariable(0)->Define(arg);
 }
 
 Value *Context::Pop() {
@@ -61,6 +62,8 @@ void Context::Push(Value *v) {
 Value *Context::Run() {
     while (pointer < syntax->code.size()) {
         auto operation = syntax->code[pointer];
+
+//        std::cout << *operation << " ";
 
         switch (operation->type) {
             case OperationTypes::Operation:
@@ -108,10 +111,10 @@ Value *Context::Run() {
             case OperationTypes::Tuple: {
                 Tuple *t = new Tuple;
                 for (int i=0;i<operation->operation;++i) {
-                    t->push_front(new Value(Pop()));
+                    t->push_front(Pop());
                 }
-                Value*v = new Value(t);
-                v->SetLValue(true);
+                Value*v = (new Value(t))->SetModifyers({Modifyers::Lvalue});
+                //v->SetLValue(true);
                 Push(v);
             } break;
         }

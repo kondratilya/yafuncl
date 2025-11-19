@@ -11,6 +11,9 @@
 #include "rules.h"
 #include "operations.h"
 
+#include <iomanip>
+
+
 #define VERBOSE true
 
 using namespace Symbols;
@@ -18,7 +21,7 @@ using namespace Symbols;
 void SyntaxAnalys::RunAction(size_t rule_id) {
     switch (rules[rule_id].action) {
         case Actions::Name: {
-            std::string name = names_stack.top()->Value();
+            std::string name = names_stack.top();
             auto it = std::find(names_lookup.begin(), names_lookup.end(), name);
             int name_index;
             if (it == names_lookup.end()) {
@@ -31,12 +34,14 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
             names_stack.pop();
         } break;
         case Actions::TupleEmpty: 
+            tuples_stack.push(0);
             std::cout << "[[Tuple0]]";
-            code.push_back(new Operation(OperationTypes::Tuple, 0));
+            //code.push_back(new Operation(OperationTypes::Tuple, 0));
         break;
         case Actions::TupleOne:
-            std::cout << "[[Tuple0]]";
-            code.push_back(new Operation(OperationTypes::Tuple, 1));
+            tuples_stack.push(1);
+            std::cout << "[[Tuple1]]";
+            //code.push_back(new Operation(OperationTypes::Tuple, 1));
         break;
         case Actions::TupleStart: {
             tuples_stack.push(2);
@@ -61,8 +66,17 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
         case Actions::Pop: 
             code.push_back(new Operation(Operations::Pop));
         break;            
-        case Actions::Plus: 
+        case Actions::Plus:
             code.push_back(new Operation(Operations::Add));
+        break;
+        case Actions::Minus:
+            code.push_back(new Operation(Operations::Substract));
+        break;
+        case Actions::Multiply: 
+            code.push_back(new Operation(Operations::Multiply));
+        break;
+        case Actions::Negative: 
+            code.push_back(new Operation(Operations::Negative));
         break;
         case Actions::Equate: 
             code.push_back(new Operation(Operations::Equate));
@@ -94,7 +108,11 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
 
 bool SyntaxAnalys::TestRules(Symbol *S) {
     bool beginning;
-    for (size_t i=0; i<stack.size(); ++i){
+
+    int search_from = stack.size()-rules.MaxRuleSize();
+    if (search_from < 0)search_from=0;
+
+    for (size_t i=search_from; i<stack.size(); ++i){
         for (size_t r=0; r<rules.size(); ++r){
             beginning=true;
             size_t j;
@@ -107,47 +125,52 @@ bool SyntaxAnalys::TestRules(Symbol *S) {
             }
             if (beginning) {
                 if (rules[r].right.size()>j-i && rules[r].right[j-i] == *S) {
+                    std::cout << "B[" << std::setw(2) << r << "] ";
                     return true;
                 }
             }
         }
     }
-    for (size_t i=0; i<stack.size(); ++i) {
-        for (size_t r=0; r<rules.size(); ++r) {
-            beginning=true;
-            size_t j;
 
-            for (j=i; j<stack.size(); ++j) {
-                if (rules[r].right.size()<=j-i || rules[r].right[j-i] != *stack[j]) {
-                    beginning=false;
+    for (size_t h=0; h<heads.size(); ++h) {
+        for (size_t r=0; r<rules.size(); ++r){
+            bool found = true;
+            if (rules[r].right.size() != stack.size()-heads[h])
+                continue;
+            for (size_t i=0; i<rules[r].right.size() && i< stack.size()+heads[h]; ++i) {
+                if (rules[r].right[i] != *stack[i+heads[h]]) {
+                    found = false;
                     break;
                 }
             }
-            if (beginning && rules[r].right.size() == stack.size()-i) {
-                if (rules[r].left==Symbol(NT::ROOT) && i!=0) {
+            if (found) {
+                std::cout << " [" << std::setw(2) << r << "] ";
+
+                if (rules[r].left==Symbol(NT::ROOT) && stack.size() != rules[r].right.size()) {
                     throw std::runtime_error("Syntax: Early end");
                 }
-                stack.resize(i);
+
+                stack.resize(stack.size() - rules[r].right.size());
                 stack.push_back(new Symbol(rules[r].left));
+                heads.resize(h+1);
 
                 RunAction(r);
-
                 return(false);
+
             }
         }
-
     }
+
+    heads.push_back(stack.size());
     if (*S==Symbol(Tokens::END)) {
         throw std::runtime_error("Syntax: Error");
     }
+    std::cout << std::setw(2) << " [  ] ";
     return(true);
 
 }
 
 bool SyntaxAnalys::Analyse() {
-    if (done) {
-        return true;
-    }
     bool to_read=true;
     Token *R;
     Symbol *S;
@@ -157,7 +180,7 @@ bool SyntaxAnalys::Analyse() {
             R = this->lexic->Get();
             S = new Symbol(R);
             if (S->IsName()) {
-                names_stack.push(R);
+                names_stack.push(R->Value());
             }
         }
 
@@ -166,14 +189,16 @@ bool SyntaxAnalys::Analyse() {
             stack.push_back(S);
 
 #ifdef VERBOSE
-        for (auto i : stack) {
-            std::cout << *i << " ";
+        for (auto i = 0; i<stack.size(); ++i) {
+            for (auto head : heads) {
+                if(head==i)std::cout << ".";
+            }
+            std::cout << *stack[i] << " ";
         }
         std::cout << "  <-- " << *S << std::endl;
 #endif
 
-        if(stack.size()==1 && *stack[0] == Symbol(NT::ROOT)) {
-            done = true;            
+        if(stack.size()==1 && *stack[0] == Symbol(NT::ROOT)) {       
             return true;
 
             /*if (Token(END)==R) {

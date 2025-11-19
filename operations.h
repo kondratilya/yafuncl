@@ -10,7 +10,8 @@ enum class OperationTypes {
 };
 
 enum class Operations {
-    Add, Equate, Return, Jump, Call, CallArg, Pop, Print
+    Add, Substract, Multiply, Negative,
+    Equate, Return, Jump, Call, CallArg, Pop, Print
 };
 
 class Operation {
