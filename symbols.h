@@ -16,7 +16,7 @@ namespace Symbols {
         BlockBegin, Block, 
         FunctionCall, 
         FunctionDefinition, 
-        Tuple, 
+        Tuple, TupleDone,
         Modifyers, Modifyer,
     };
 

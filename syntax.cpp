@@ -5,11 +5,10 @@
 #include <stack>
 #include <set>
 #include <string>
-#include <algorithm>
 #include <stdexcept>
 #include "symbols.h"
 #include "rules.h"
-#include "operations.h"
+#include "instructions.h"
 
 #include <iomanip>
 
@@ -22,86 +21,90 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
     switch (rules[rule_id].action) {
         case Actions::Name: {
             std::string name = names_stack.top();
-            auto it = std::find(names_lookup.begin(), names_lookup.end(), name);
-            int name_index;
-            if (it == names_lookup.end()) {
-                names_lookup.push_back(name);
-                name_index = names_lookup.size()-1;
-            } else {
-                name_index = std::distance(names_lookup.begin(), it);
-            }
-            code.push_back(new Operation(OperationTypes::NameLookup, name_index));
             names_stack.pop();
+            code.push_back(new VariableInstruction(this->names_lookup.insert(name), &this->names_lookup));
         } break;
         case Actions::TupleEmpty: 
             tuples_stack.push(0);
-            std::cout << "[[Tuple0]]";
-            //code.push_back(new Operation(OperationTypes::Tuple, 0));
+            std::cout << "[]";
         break;
         case Actions::TupleOne:
             tuples_stack.push(1);
-            std::cout << "[[Tuple1]]";
-            //code.push_back(new Operation(OperationTypes::Tuple, 1));
+            std::cout << "[1]";
         break;
         case Actions::TupleStart: {
             tuples_stack.push(2);
+            std::cout << "[2]";
         } break;
         case Actions::Tuple: {
             size_t tuple_size = tuples_stack.top()+1;
             tuples_stack.pop();
             tuples_stack.push(tuple_size);
-            // Operation *tuple = code.back();
-            // if (tuple->type!=OperationTypes::Tuple) {
-            //     std::cout << "[["<<rule_id<<"Tuple1]]";
-            //     code.push_back(new Operation(OperationTypes::Tuple, 1));
-            //     break;
-            // }
-            // tuple->operation++;
-            // std::cout << "[["<<rule_id<<"Tuple" <<tuple->operation << "]]";
+            std::cout << "[+]";
         } break;
         case Actions::TupleEnd: {
-            code.push_back(new Operation(OperationTypes::Tuple, tuples_stack.top()));
+            code.push_back(new TupleInstruction(tuples_stack.top()));
             tuples_stack.pop();
+            std::cout << "[!]";
         } break;
         case Actions::Pop: 
-            code.push_back(new Operation(Operations::Pop));
+            code.push_back(new OperatorInstruction(Operators::Pop));
         break;            
         case Actions::Plus:
-            code.push_back(new Operation(Operations::Add));
+            code.push_back(new OperatorInstruction(Operators::Add));
         break;
         case Actions::Minus:
-            code.push_back(new Operation(Operations::Substract));
+            code.push_back(new OperatorInstruction(Operators::Substract));
         break;
         case Actions::Multiply: 
-            code.push_back(new Operation(Operations::Multiply));
+            code.push_back(new OperatorInstruction(Operators::Multiply));
         break;
         case Actions::Negative: 
-            code.push_back(new Operation(Operations::Negative));
+            code.push_back(new OperatorInstruction(Operators::Negative));
+        break;
+        case Actions::Positive: 
+            code.push_back(new OperatorInstruction(Operators::Positive));
+        break;
+        case Actions::Dec: 
+            code.push_back(new OperatorInstruction(Operators::Dec));
+        break;
+        case Actions::Inc: 
+            code.push_back(new OperatorInstruction(Operators::Inc));
+        break;
+        case Actions::Not: 
+            code.push_back(new OperatorInstruction(Operators::Not));
         break;
         case Actions::Equate: 
-            code.push_back(new Operation(Operations::Equate));
+            code.push_back(new OperatorInstruction(Operators::Equate));
+        break;
+        case Actions::EquateTuple: 
+            code.push_back(new TupleInstruction(tuples_stack.top()));
+            tuples_stack.pop();
+            code.push_back(new OperatorInstruction(Operators::EquateTuple));
         break;
         case Actions::Print: 
-            code.push_back(new Operation(Operations::Print));
+            code.push_back(new OperatorInstruction(Operators::Print));
         break;
         case Actions::BeginFunction: 
             function_definitions.push(code.size());
-            code.push_back(new Operation());
-            code.push_back(new Operation(Operations::Jump));
+            code.push_back(new Instruction());
+            code.push_back(new OperatorInstruction(Operators::Jump));
         break;
         case Actions::EndFunction: { 
             size_t function_start = function_definitions.top();
             function_definitions.pop();
-            code.push_back(new Operation(Operations::Return));
-            code[function_start]->type = OperationTypes::Address;
-            code[function_start]->operation = code.size();
-            code.push_back(new Operation(OperationTypes::Address, function_start+2));
+            code.push_back(new OperatorInstruction(Operators::Return));
+            delete code[function_start];
+            code[function_start] = new AddressInstruction(code.size());
+            // code[function_start]->type = InstructionTypes::Address;
+            // code[function_start]->Instruction = code.size();
+            code.push_back(new AddressInstruction(function_start+2));
         } break;
         case Actions::FunctionCall: 
-            code.push_back(new Operation(Operations::Call));
+            code.push_back(new OperatorInstruction(Operators::Call));
         break;
         case Actions::FunctionCallArg:
-            code.push_back(new Operation(Operations::CallArg));
+            code.push_back(new OperatorInstruction(Operators::CallArg));
         break;
     }
 }
@@ -145,12 +148,13 @@ bool SyntaxAnalys::TestRules(Symbol *S) {
             }
             if (found) {
                 std::cout << " [" << std::setw(2) << r << "] ";
-
-                if (rules[r].left==Symbol(NT::ROOT) && stack.size() != rules[r].right.size()) {
+                if (rules[r].left==NT::ROOT && stack.size() != rules[r].right.size()) {
                     throw std::runtime_error("Syntax: Early end");
                 }
-
-                stack.resize(stack.size() - rules[r].right.size());
+                for (size_t i=0; i<rules[r].right.size(); ++i) {
+                    delete stack.back();
+                    stack.pop_back();
+                }
                 stack.push_back(new Symbol(rules[r].left));
                 heads.resize(h+1);
 

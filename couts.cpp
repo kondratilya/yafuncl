@@ -1,32 +1,8 @@
 #include <iostream>
 #include <map>
-#include "operations.h"
+#include "instructions.h"
 #include "symbols.h"
 #include "values.h"
-
-std::map<Operations, std::string> str_operations = {
-    {Operations::Add, "Add"}, 
-    {Operations::Substract, "Substract"}, 
-    {Operations::Multiply, "Multiply"}, 
-    {Operations::Negative, "Negative"}, 
-    {Operations::Equate, "Equate"}, 
-    {Operations::Return, "Return"}, 
-    {Operations::Jump, "Jump"}, 
-    {Operations::Call, "Call"}, 
-    {Operations::CallArg, "CallArg"}, 
-    {Operations::Pop, "Pop"}, 
-    {Operations::Print, "Print"},
-};
-std::ostream &operator<<(std::ostream &os, Operation const &o) { 
-    switch (o.type) {
-        case OperationTypes::NameLookup: return os << "[" <<o.operation << "]";
-        case OperationTypes::Address: return os << "<" <<o.operation << ">";
-        case OperationTypes::Empty: return os << "[ ]";
-        case OperationTypes::Operation: return os << str_operations[static_cast<Operations>(o.operation)];
-        case OperationTypes::Tuple: return os << "(" <<o.operation << ")";
-        default: return os << "???";
-    }
-}
 
 using namespace Symbols;
 std::map<NonTerminals, std::string> str_non_terminals = {
@@ -43,7 +19,7 @@ std::map<NonTerminals, std::string> str_non_terminals = {
     {NonTerminals::Expression, "Expression"},
     {NonTerminals::BlockBegin, "BlockBegin"}, {NonTerminals::Block, "Block"},  
     {NonTerminals::FunctionCall, "FunctionCall"}, 
-    {NonTerminals::Tuple, "Tuple"}, 
+    {NonTerminals::Tuple, "Tuple"}, {NonTerminals::TupleDone, "TupleDone"},
     {NonTerminals::Modifyers, "Modifyers"}, 
     {NonTerminals::Modifyer, "Modifyer"}, 
 };
@@ -59,13 +35,9 @@ std::ostream &operator<<(std::ostream &os, Symbol &s) {
 }
 
 
-std::ostream &operator<<(std::ostream &os, Value *v) { 
-    /*if (v->GetLValue())os << "l";
-    if (v->plain_tuple)os << "t";*/
-    if (v->modifyers.count(Modifyers::Lvalue))os << "l";
-    if (v->modifyers.count(Modifyers::LiteralTuple))os << "t";
+std::ostream &operator<<(std::ostream &os, Value *v) {
     switch (v->type) {
-        case ValueTypes::Default: return os << v->GetValue();
+        case ValueTypes::Default: return os << v->GetValue(NULL);
         case ValueTypes::Address: return os << "<" << v->GetAddress() << ">";
         case ValueTypes::Tuple: {
             os << "(";

@@ -5,13 +5,10 @@
 #include "lexic.h"
 #include "symbols.h"
 #include "rules.h"
-#include "operations.h"
-
-typedef size_t VariableId;
+#include "variables_table.h"
+#include "instructions.h"
 
 #define VERBOSE true
-
-
 
 class SyntaxAnalys {
     Rules rules;
@@ -20,7 +17,7 @@ class SyntaxAnalys {
     std::vector<Symbol*> stack;
     std::vector<size_t> heads;
 
-    std::vector<std::string> names_lookup;
+    VariablesLookup names_lookup;
     std::stack<std::string> names_stack;
     std::stack<size_t> function_definitions;
     std::stack<size_t> tuples_stack;
@@ -30,12 +27,11 @@ class SyntaxAnalys {
 
     public:
     Code code;
-
-    std::string getName(VariableId id) { return names_lookup[id]; }
+    size_t arguments_id = 0;
 
     SyntaxAnalys(LexicAnalys &lexic) { 
         this->lexic = &lexic; 
-        names_lookup.push_back("arguments");
+        arguments_id = names_lookup.insert("arguments");
     };
 
     bool Analyse();
