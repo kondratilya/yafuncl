@@ -6,42 +6,43 @@
 #include <string>
 #include <stdexcept>
 
-class Value;
-typedef size_t Address;
+#include "values.h"
+
 class SyntaxAnalys;
 typedef size_t VariableId;
 
 #include "instructions.h"
 #include "syntax.h"
-#include "values.h"
+
 
 class Context {
     SyntaxAnalys *syntax;
     Context *parent = NULL;
-    std::map<VariableId, Value*> lookup;
-    std::stack<Value*> stack;
-    Address pointer = 0;
-    Value *result;
+    std::map<VariableId, Values::Value*> lookup;
+    std::stack<Values::Value*> stack;
+    size_t pointer = 0;
+    Values::Value *result;
 
     public:
 
     Context *Parent() { return parent; }
 
-    Value *SearchVariable(VariableId id);
-    Value *CreateVariable(VariableId id);
-    Value *GetVariable(VariableId id);
+    Values::Value *SearchVariable(VariableId id);
+    Values::Value *CreateVariable(VariableId id);
+    Values::Value *GetVariable(VariableId id);
+    Context *WithArgument(Values::Value* arg=NULL);
 
-    Context(Context *parent, Address position=0, Value* arg=NULL);
+    Context(Context *parent, size_t position=0);
     
-    Value* Pop();
-    Value* Top();
-    void Push(Value *v);
+    Values::Value* Pop();
+    Values::Value* Top();
+    void Push(Values::Value *v);
 
-    void Jump(Address a);
+    void Jump(size_t a);
 
-    void Result(Value *result);
+    void Result(Values::Value *result);
     
-    Context(SyntaxAnalys &syntax, Address position=0, Value* arg=NULL);
+    Context(SyntaxAnalys &syntax, size_t position=0);
 
-    Value *Run();
+    Values::Value *Run();
 };

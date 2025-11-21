@@ -1,8 +1,6 @@
 #include <iostream>
 #include <map>
-#include "instructions.h"
 #include "symbols.h"
-#include "values.h"
 
 using namespace Symbols;
 std::map<NonTerminals, std::string> str_non_terminals = {
@@ -31,22 +29,5 @@ std::ostream &operator<<(std::ostream &os, Symbol &s) {
             return os << s.name;
     } else  {
         return os << "<" << str_non_terminals[s.non_terminal] << ">";
-    }
-}
-
-
-std::ostream &operator<<(std::ostream &os, Value *v) {
-    switch (v->type) {
-        case ValueTypes::Default: return os << v->GetValue(NULL);
-        case ValueTypes::Address: return os << "<" << v->GetAddress() << ">";
-        case ValueTypes::Tuple: {
-            os << "(";
-            for (auto el: *(Tuple*)(v->value)) {
-                os << el << ", ";    
-            }
-            os << ")";
-        } return os;
-        case ValueTypes::Undefined: return os << "?";
-        default: return os << "???";
     }
 }

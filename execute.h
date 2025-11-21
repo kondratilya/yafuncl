@@ -14,5 +14,5 @@ class Execute {
 
     public:
     Execute(SyntaxAnalys &syntax);
-    Value *Run();
+    Values::Value *Run();
 };

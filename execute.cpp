@@ -8,6 +8,6 @@ Execute::Execute(SyntaxAnalys &syntax) {
     }
     std::cout << std::endl;
 }
-Value *Execute::Run() {
+Values::Value *Execute::Run() {
     return (new Context(*syntax))->Run();
 }

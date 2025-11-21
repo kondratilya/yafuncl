@@ -73,9 +73,9 @@ class VariableInstruction: public Instruction {
 };
 
 class AddressInstruction: public Instruction {
-    Address position;
+    size_t position;
         public:
-    AddressInstruction(Address position): Instruction() {
+    AddressInstruction(size_t position): Instruction() {
         this->position = position;
     }
     operator std::string() const override { 

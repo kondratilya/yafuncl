@@ -3,10 +3,7 @@
 #include <stdexcept>
 #include "context.h"
 
-// class Operation;
-// typedef std::vector<Operation*> Code;
-
-Value *Context::SearchVariable(VariableId id) {
+Values::Value *Context::SearchVariable(VariableId id) {
     auto search = lookup.find(id);
     if (search != lookup.end()) {
         return search->second;
@@ -18,58 +15,63 @@ Value *Context::SearchVariable(VariableId id) {
     }
 }
 
-Value *Context::CreateVariable(VariableId id) {
-    Value* val = new Value();
+Values::Value *Context::CreateVariable(VariableId id) {
+    Values::Value* val = new Values::Value();
     lookup[id] = val;
     return val;
 }
 
-Value *Context::GetVariable(VariableId id) {
-    Value* val = this->SearchVariable(id);
+Values::Value *Context::GetVariable(VariableId id) {
+    Values::Value* val = this->SearchVariable(id);
     if (val) return val;
     return CreateVariable(id);
 }
 
-Context::Context(Context *parent, Address position, Value* arg): Context(*(parent->syntax), position, arg) {
+Context::Context(Context *parent, size_t position): Context(*(parent->syntax), position) {
      this->parent = parent;
 }
 
-Context::Context(SyntaxAnalys &syntax, Address position, Value* arg) {
+Context::Context(SyntaxAnalys &syntax, size_t position) {
     this->parent = NULL;
     this->syntax = &syntax;
     this->pointer = position;
-    this->result = new Value(DefaultValueType(0));                                // Неявное определение 0 в языку тут
-    CreateVariable(syntax.arguments_id)->Define(arg);                             // Аргумкнты
+    this->result = new Values::Value(Values::DefaultValueType(0));                                // Неявное определение 0 в языку тут
+    //CreateVariable(syntax.arguments_id)->Define(arg);                             // Аргумкнты
 }
 
-Value *Context::Pop() {
+Context *Context::WithArgument(Values::Value* arg) {
+    CreateVariable(syntax->arguments_id)->Define(arg);
+    return this;
+}
+
+Values::Value *Context::Pop() {
     if (!stack.size()) 
-        return new Value();
-    Value *v = stack.top();
+        return new Values::Value();
+    Values::Value *v = stack.top();
     stack.pop();
     return v;
 }
 
-Value *Context::Top() {
+Values::Value *Context::Top() {
     if (!stack.size()) 
-        return new Value();
+        return new Values::Value();
     return stack.top();
 }
 
-void Context::Push(Value *v) {
+void Context::Push(Values::Value *v) {
     if (!v) return;
     stack.push(v);
 }
 
-void Context::Jump(Address a) {
+void Context::Jump(size_t a) {
     pointer = a;
 }
 
-void Context::Result(Value *result) {
-    this->result->Define(result);
+void Context::Result(Values::Value *result) {
+    this->result = result;
 }
 
-Value *Context::Run() {
+Values::Value *Context::Run() {
     ReturnCode ret = ReturnCode::None;
     while (pointer < syntax->code.size()) {
         auto operation = syntax->code[pointer];
@@ -80,9 +82,14 @@ Value *Context::Run() {
             continue;
         }
         if (ret == ReturnCode::Return) {
-            return result;
+            Values::Value *new_result = new Values::Value(result);
+            if (new_result->type == Values::ValueTypes::Addr) {
+                new_result->SetAddressContext(this);
+                //SetContext(this);
+            }
+            return new_result;
         }
         ++pointer;
     }
-    return result;
+    return  new Values::Value(result);
 }
