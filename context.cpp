@@ -36,11 +36,10 @@ Context::Context(SyntaxAnalys &syntax, size_t position) {
     this->syntax = &syntax;
     this->pointer = position;
     this->result = new Values::Value(Values::DefaultValueType(0));                                // Неявное определение 0 в языку тут
-    //CreateVariable(syntax.arguments_id)->Define(arg);                             // Аргумкнты
 }
 
 Context *Context::WithArgument(Values::Value* arg) {
-    CreateVariable(syntax->arguments_id)->Define(arg);
+    CreateVariable(syntax->arguments_id)->SetTo(arg);
     return this;
 }
 
@@ -74,22 +73,21 @@ void Context::Result(Values::Value *result) {
 Values::Value *Context::Run() {
     ReturnCode ret = ReturnCode::None;
     while (pointer < syntax->code.size()) {
-        auto operation = syntax->code[pointer];
+        auto instruction = syntax->code[pointer];
 
-//  std::cout << std::string(*operation) << " ";
-        ret = operation->Run(this);
+//  std::cout << std::string(*instruction) << " ";
+        ret = instruction->Run(this);
         if (ret == ReturnCode::Continue) {
             continue;
         }
         if (ret == ReturnCode::Return) {
             Values::Value *new_result = new Values::Value(result);
-            if (new_result->type == Values::ValueTypes::Addr) {
-                new_result->SetAddressContext(this);
-                //SetContext(this);
+            if (new_result->type == Values::ValueTypes::Address) {
+                new_result->GetAddress().SetContext(this);
             }
             return new_result;
         }
         ++pointer;
     }
-    return  new Values::Value(result);
+    return new Values::Value(result);
 }

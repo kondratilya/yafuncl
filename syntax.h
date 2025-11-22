@@ -24,13 +24,15 @@ class SyntaxAnalys {
 
     void RunAction(size_t rule_id);
     bool TestRules(Symbol *S);
+    bool verbose_;
 
     public:
     Code code;
     size_t arguments_id = 0;
 
-    SyntaxAnalys(LexicAnalys &lexic) { 
+    SyntaxAnalys(LexicAnalys &lexic, bool verbose=false) { 
         this->lexic = &lexic; 
+        verbose_ = verbose;
         arguments_id = names_lookup.insert("arguments");
     };
 

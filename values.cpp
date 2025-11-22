@@ -1,81 +1,85 @@
 #include <string>
+#include <memory>
 #include "values.h"
 #include "context.h"
 
 using namespace Values;
 
 Value::Value(DefaultValueType value) {
-    Define(value);
+    this->value = new DefaultValueType(value);
+    type = ValueTypes::Default;
 }
-Value::Value(Address value) {
-    Define(value);
+Value::Value(AddressType value) {
+    this->value = new AddressType(value);
+    type = ValueTypes::Address;
 }
-Value::Value(Tuple *value) {
-    Define(value);
+Value::Value(TupleType value) {
+    this->value = new TupleType(value);
+    type = ValueTypes::Tuple;
 }
 Value::Value() {
     type = ValueTypes::Undefined;
 }
-Value::Value(Value* value) {
-    this->value = value->value;
-    this->type = value->type;
+Value::Value(Value* value) {            //clone value
+    SetTo(value);
 }
-Value* Value::Define(const DefaultValueType value) {
-    this->value = new DefaultValueType(value);
-    type = ValueTypes::Default;
-    return this;
-}
-Value* Value::Define(Address value) {
-    this->value = new Address(value);
-    type = ValueTypes::Addr;
-    return this;
-}
-Value* Value::Define(Tuple *value) {
-    this->value = value;
-    type = ValueTypes::Tuple;
-    return this;
-}
-Value* Value::Define(const Value *value) {
-    if (!value) {
-        type = ValueTypes::Undefined;
-        return this;
-    }
+Value *Value::SetTo(const Value* value) {               // Set internal value and type
     this->value = value->value;
     this->type = value->type;
     return this;
 }
-DefaultValueType Value::GetValue(Context* context) {
-    if (type==ValueTypes::Undefined) {
-        throw std::runtime_error("Exec: Operation with Undefined value"); 
-    }
-    if (type==ValueTypes::Addr) {
-        // if (!context) 
-        //     return (DefaultValueType)0;
-        // return (new Context(context, GetAddress()))->Run()->GetValue(context);
 
-        return GetAddress().getContext(context)->Run()->GetValue(context);
+DefaultValueType& Value::GetValue(Context* context) const {
+    switch (type) {
+        case ValueTypes::Undefined:
+            throw std::runtime_error("Exec: Operation with Undefined value"); 
+        case ValueTypes::Address:
+            return GetAddress().getContext(context)->Run()->GetValue(context);
+        case ValueTypes::Tuple:
+            throw std::runtime_error("Exec: Conversion Tuple -> Value"); 
+        default:
+            return *(DefaultValueType*)value;
     }
-    return *(DefaultValueType*)value;
 }
 
-Address::Address(size_t position, Context *context){
+AddressType& Value::GetAddress() const {
+    if (type!=ValueTypes::Address)
+        throw std::runtime_error("Exec: Call to non-address");
+    return *(AddressType*)value;
+}
+
+TupleType& Value::GetTuple(Context* context) {
+    TupleType v;
+    
+    switch (type) {
+        case ValueTypes::Undefined:
+            return *(new TupleType());                /// !!! - how to delete??? !!!!
+        case ValueTypes::Default: 
+        case ValueTypes::Address:
+            return *(new TupleType{this});              /// !!! - how to delete??? !!!!
+        default:
+            return *(TupleType*)value;
+    }
+}
+
+Value::operator std::string() { 
+    std::ostringstream os;
+    switch (type) {
+        case ValueTypes::Default: os << GetValue(); break;
+        case ValueTypes::Address: os << std::string(GetAddress()); break;
+        case ValueTypes::Tuple: os << std::string(GetTuple()) ; break;
+        case ValueTypes::Undefined: os << "?"; break;
+        default: os << "???"; break;
+    }
+    return os.str(); 
+}
+
+AddressType::AddressType(size_t position, Context *context){
     this->position=position;
     this->context=context;
 }
-Address Value::GetAddress() {
-    if (type!=ValueTypes::Addr)
-        throw std::runtime_error("Exec: Call to non-address");
-    return *(Address*)value;
-}
 
-Value* Value::SetAddressContext(Context* context) {
-    if (type!=ValueTypes::Addr)
-        throw std::runtime_error("Exec: ??? Set context for non-address");  
-    ((Address*)value)->SetContext(context);
-    return this;
-}
-
-Context *Address::getContext(Context *fallback) {
+Context *AddressType::getContext(Context *fallback) {
     // Если у адреса есть контекст, значит из него уже вышли через Return, можно делать Jump
     if (this->context) {
         this->context->Jump(this->position); // Этот Jump будет при вызове Return контекста. Тут только для наглядности
@@ -84,22 +88,20 @@ Context *Address::getContext(Context *fallback) {
     return new Context(fallback, this->position);
 }
 
-void Address::SetContext(Context *context) {
+void AddressType::SetContext(Context *context) {
     this->context = context;
 }
 
-// std::ostream &operator<<(std::ostream &os, Value *v) {
-//     switch (v->type) {
-//         case ValueTypes::Default: return os << v->GetValue(NULL);
-//         case ValueTypes::Address: return os << "<" << v->GetAddress() << ">";
-//         case ValueTypes::Tuple: {
-//             os << "(";
-//             for (auto el: *(Tuple*)(v->value)) {
-//                 os << el << ", ";    
-//             }
-//             os << ")";
-//         } return os;
-//         case ValueTypes::Undefined: return os << "?";
-//         default: return os << "???";
-//     }
-// }
+AddressType::operator std::string() const { 
+    std::ostringstream os; 
+    os << "<" << this->position << ">";
+    return os.str();
+};
+
+TupleType::operator std::string() const { 
+    std::ostringstream os; 
+    os << "(";
+    for (auto el: *this) os << std::string(*el) << ", "; 
+    os << ")";
+    return os.str();
+};

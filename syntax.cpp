@@ -12,9 +12,6 @@
 
 #include <iomanip>
 
-
-#define VERBOSE true
-
 using namespace Symbols;
 
 void SyntaxAnalys::RunAction(size_t rule_id) {
@@ -128,7 +125,7 @@ bool SyntaxAnalys::TestRules(Symbol *S) {
             }
             if (beginning) {
                 if (rules[r].right.size()>j-i && rules[r].right[j-i] == *S) {
-                    std::cout << "B[" << std::setw(2) << r << "] ";
+                    if (verbose_) std::cout << "B[" << std::setw(2) << r << "] ";
                     return true;
                 }
             }
@@ -147,7 +144,7 @@ bool SyntaxAnalys::TestRules(Symbol *S) {
                 }
             }
             if (found) {
-                std::cout << " [" << std::setw(2) << r << "] ";
+                if (verbose_) std::cout << " [" << std::setw(2) << r << "] ";
                 if (rules[r].left==NT::ROOT && stack.size() != rules[r].right.size()) {
                     throw std::runtime_error("Syntax: Early end");
                 }
@@ -169,7 +166,7 @@ bool SyntaxAnalys::TestRules(Symbol *S) {
     if (*S==Symbol(Tokens::END)) {
         throw std::runtime_error("Syntax: Error");
     }
-    std::cout << std::setw(2) << " [  ] ";
+    if (verbose_) std::cout << std::setw(2) << " [  ] ";
     return(true);
 
 }
@@ -192,15 +189,15 @@ bool SyntaxAnalys::Analyse() {
         if(to_read)
             stack.push_back(S);
 
-#ifdef VERBOSE
-        for (auto i = 0; i<stack.size(); ++i) {
-            for (auto head : heads) {
-                if(head==i)std::cout << ".";
+        if (verbose_) {
+            for (auto i = 0; i<stack.size(); ++i) {
+                for (auto head : heads) {
+                    if(head==i)std::cout << ".";
+                }
+                std::cout << *stack[i] << " ";
             }
-            std::cout << *stack[i] << " ";
+            std::cout << "  <-- " << *S << std::endl;
         }
-        std::cout << "  <-- " << *S << std::endl;
-#endif
 
         if(stack.size()==1 && *stack[0] == Symbol(NT::ROOT)) {       
             return true;

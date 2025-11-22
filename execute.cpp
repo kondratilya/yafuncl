@@ -3,8 +3,8 @@
 Execute::Execute(SyntaxAnalys &syntax) {
     this->syntax = &syntax;
     this->syntax->Analyse();
-    for (auto operation : this->syntax->code) {
-        std::cout << std::string(*operation) << " ";
+    for (auto instruction : this->syntax->code) {
+        std::cout << std::string(*instruction) << " ";
     }
     std::cout << std::endl;
 }

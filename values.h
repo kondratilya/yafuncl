@@ -7,21 +7,29 @@ class Context;
 
 namespace Values {
     class Value;
-
+    
     typedef double DefaultValueType;
-    class Address {
+
+    class AddressType {
         Context *context=NULL;
         public:
-        Address(size_t position, Context *context=NULL);
+        AddressType(size_t position, Context *context=NULL);
         size_t position;
         Context *getContext(Context *fallback=NULL);
         void SetContext(Context *context);
+        operator std::string() const;
     };
-    typedef std::list<Value*> Tuple;
 
+    class TupleType: public std::list<Value*> {
+        public:
+        TupleType() : std::list<Value*>() {}
+        TupleType(std::initializer_list<Value*> init) : std::list<Value*>(init) {};
+        operator std::string() const;
+    };
+    
     enum class ValueTypes {
         Default,
-        Addr,
+        Address,
         Tuple,
         Undefined
     };
@@ -30,38 +38,19 @@ namespace Values {
         public:
         void *value;
         ValueTypes type;
-        Context* context=NULL; 
-
         Value(DefaultValueType value);
-        Value(Address value);
-        Value(Tuple *value);
+        Value(AddressType value);
+        Value(TupleType value);
         Value();
-        Value(Value* value);
-        Value* Define(const DefaultValueType value);
-        Value* Define(Address value);
-        Value* Define(Tuple *value);
-        Value* Define(const Value *value);
-        bool IsDefined();
-        DefaultValueType GetValue(Context* context);
-        Address GetAddress();
-        Value* SetAddressContext(Context* context);
-        operator std::string() { 
-            std::ostringstream os;
-            switch (type) {
-                case ValueTypes::Default: os << GetValue(NULL); break;
-                case ValueTypes::Addr: os << "<" << GetAddress().position << ">"; break;
-                case ValueTypes::Tuple: {
-                    os << "(";
-                    for (auto el: *(Tuple*)(value)) {
-                        os << std::string(*el) << ", ";    
-                    }
-                    os << ")";
-                } break;
-                case ValueTypes::Undefined: os << "?"; break;
-                default: os << "???"; break;
-            }
-            return os.str(); 
-        }
+        Value(Value* value);        // Clone
+
+        Value* SetTo(const Value *value);  // Set internal value and type
+
+        DefaultValueType& GetValue(Context* context=NULL) const;
+        AddressType& GetAddress() const;
+        TupleType& GetTuple(Context* context=NULL);
+
+        operator std::string();
 
     };
 }
