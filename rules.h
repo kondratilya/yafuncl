@@ -11,8 +11,9 @@ using NT = NonTerminals;
 enum class Actions {
     None=0, Name, Equate, Print,
     BeginFunction, EndFunction, Return, ReturnEmpty,
-    Plus, Minus, Multiply, Divide, 
+    Plus, Minus, Multiply, Divide, Mod,
     Negative, Positive, Dec, Inc, Not,
+    Or, And, IsEqual, IsNotEqual, IsLess, IsMore, IsLessOrEqual, IsMoreOrEqual, 
     Pop,
     Tuple, TupleEmpty, TupleOne, TupleStart, TupleEnd, EquateTuple,
     FunctionDefinition, 
@@ -56,22 +57,24 @@ class Rules {
 
         {NT::T1, {Symbol(NT::T2)}},
 
-        {NT::T2, {Symbol(NT::T2), Symbol("or"), Symbol(NT::T3)}, Actions::Plus},
+        {NT::T2, {Symbol(NT::T2), Symbol("or"), Symbol(NT::T3)}, Actions::Or},
+        {NT::T2, {Symbol(NT::T2), Symbol("||"), Symbol(NT::T3)}, Actions::Or},
         {NT::T2, {Symbol(NT::T3)}},
 
-        {NT::T3, {Symbol(NT::T3), Symbol("and"), Symbol(NT::T4)}, Actions::Plus},
+        {NT::T3, {Symbol(NT::T3), Symbol("and"), Symbol(NT::T4)}, Actions::And},
+        {NT::T3, {Symbol(NT::T3), Symbol("and"), Symbol(NT::T4)}, Actions::And},
         {NT::T3, {Symbol(NT::T4)}},
 
-        {NT::T4, {Symbol(NT::T4), Symbol("=="), Symbol(NT::T5)}, Actions::Plus},
-        {NT::T4, {Symbol(NT::T4), Symbol("!="), Symbol(NT::T5)}, Actions::Plus},
-        {NT::T4, {Symbol(NT::T4), Symbol("equals"), Symbol(NT::T5)}, Actions::Plus},
-        {NT::T4, {Symbol(NT::T4), Symbol("not"), Symbol("equals"), Symbol(NT::T5)}, Actions::Plus},
+        {NT::T4, {Symbol(NT::T4), Symbol("=="), Symbol(NT::T5)}, Actions::IsEqual},
+        {NT::T4, {Symbol(NT::T4), Symbol("!="), Symbol(NT::T5)}, Actions::IsNotEqual},
+        {NT::T4, {Symbol(NT::T4), Symbol("equals"), Symbol(NT::T5)}, Actions::IsEqual},
+        {NT::T4, {Symbol(NT::T4), Symbol("notequals"), Symbol(NT::T5)}, Actions::IsNotEqual},
         {NT::T4, {Symbol(NT::T5)}},
 
-        {NT::T5, {Symbol(NT::T5), Symbol("<"), Symbol(NT::T6)}, Actions::Plus},
-        {NT::T5, {Symbol(NT::T5), Symbol(">"), Symbol(NT::T6)}, Actions::Plus},
-        {NT::T5, {Symbol(NT::T5), Symbol("<="), Symbol(NT::T6)}, Actions::Plus},
-        {NT::T5, {Symbol(NT::T5), Symbol(">="), Symbol(NT::T6)}, Actions::Plus},
+        {NT::T5, {Symbol(NT::T5), Symbol("<"), Symbol(NT::T6)}, Actions::IsLess},
+        {NT::T5, {Symbol(NT::T5), Symbol(">"), Symbol(NT::T6)}, Actions::IsMore},
+        {NT::T5, {Symbol(NT::T5), Symbol("<="), Symbol(NT::T6)}, Actions::IsLessOrEqual},
+        {NT::T5, {Symbol(NT::T5), Symbol(">="), Symbol(NT::T6)}, Actions::IsMoreOrEqual},
         {NT::T5, {Symbol(NT::T6)}},
 
         {NT::T6, {Symbol(NT::T6), Symbol("+"), Symbol(NT::T7)}, Actions::Plus},
@@ -80,11 +83,11 @@ class Rules {
 
         {NT::T7, {Symbol(NT::T7), Symbol("*"), Symbol(NT::T8)}, Actions::Multiply},
         {NT::T7, {Symbol(NT::T7), Symbol("/"), Symbol(NT::T8)}, Actions::Divide},
-        {NT::T7, {Symbol(NT::T7), Symbol("%"), Symbol(NT::T8)}, Actions::Divide},
+        {NT::T7, {Symbol(NT::T7), Symbol("%"), Symbol(NT::T8)}, Actions::Mod},
         {NT::T7, {Symbol(NT::T8)}},
 
         {NT::T8, {Symbol("-"), Symbol(NT::T8)}, Actions::Negative},
-        {NT::T8, {Symbol("+"), Symbol(NT::T8)}},
+        {NT::T8, {Symbol("+"), Symbol(NT::T8)}, Actions::Positive},
         {NT::T8, {Symbol("--"), Symbol(NT::T8)}, Actions::Dec},
         {NT::T8, {Symbol("++"), Symbol(NT::T8)}, Actions::Inc},
         {NT::T8, {Symbol("!"), Symbol(NT::T8)}, Actions::Not},
@@ -107,8 +110,6 @@ class Rules {
         
         
         {NT::Tuple, {Symbol("("), Symbol(NT::Tuple), Symbol(")")}},
-        // {NT::Tuple, {Symbol(NT::Tuple)}, Actions::TupleEnd},
-        // {NT::LVALUE, {Symbol("("), Symbol(NT::Tuple), Symbol(","), Symbol(")")}, Actions::TupleEnd},
         {NT::Tuple, {Symbol("("), Symbol(")")}, Actions::TupleEmpty},
         {NT::Tuple, {Symbol("("), Symbol(NT::T1), Symbol(","), Symbol(")")}, Actions::TupleOne},
         {NT::LVALUE, {Symbol(NT::NAME)}},

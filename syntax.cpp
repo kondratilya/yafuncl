@@ -56,6 +56,12 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
         case Actions::Multiply: 
             code.push_back(new OperatorInstruction(Operators::Multiply));
         break;
+        case Actions::Divide: 
+            code.push_back(new OperatorInstruction(Operators::Divide));
+        break;
+        case Actions::Mod: 
+            code.push_back(new OperatorInstruction(Operators::Mod));
+        break;
         case Actions::Negative: 
             code.push_back(new OperatorInstruction(Operators::Negative));
         break;
@@ -70,6 +76,30 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
         break;
         case Actions::Not: 
             code.push_back(new OperatorInstruction(Operators::Not));
+        break;
+        case Actions::Or: 
+            code.push_back(new OperatorInstruction(Operators::Or));
+        break;
+        case Actions::And: 
+            code.push_back(new OperatorInstruction(Operators::And));
+        break;
+        case Actions::IsEqual: 
+            code.push_back(new OperatorInstruction(Operators::IsEqual));
+        break;
+        case Actions::IsNotEqual: 
+            code.push_back(new OperatorInstruction(Operators::IsNotEqual));
+        break;
+        case Actions::IsLess: 
+            code.push_back(new OperatorInstruction(Operators::IsLess));
+        break;
+        case Actions::IsMore: 
+            code.push_back(new OperatorInstruction(Operators::IsMore));
+        break;
+        case Actions::IsLessOrEqual: 
+            code.push_back(new OperatorInstruction(Operators::IsLessOrEqual));
+        break;
+        case Actions::IsMoreOrEqual: 
+            code.push_back(new OperatorInstruction(Operators::IsMoreOrEqual));
         break;
         case Actions::Equate: 
             code.push_back(new OperatorInstruction(Operators::Equate));

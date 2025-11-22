@@ -12,7 +12,9 @@
 class Context;
 
 enum class Operators {
-    Add, Substract, Multiply, Negative, Positive, Dec, Inc, Not,
+    Add, Substract, Multiply, Divide, Mod,
+    Negative, Positive, Dec, Inc, Not,
+    Or, And, IsEqual, IsNotEqual, IsLess, IsMore, IsLessOrEqual, IsMoreOrEqual,
     Equate, Return, Jump, Call, CallArg, Pop, Print, EquateTuple,
 };
 
@@ -35,14 +37,24 @@ class OperatorInstruction: public Instruction {
     }
     operator std::string() const override { 
         std::map<Operators, std::string> str_operators = {
-            {Operators::Add, "Add"}, 
-            {Operators::Substract, "Substract"}, 
-            {Operators::Multiply, "Multiply"}, 
+            {Operators::Add, "+"}, 
+            {Operators::Substract, "-"}, 
+            {Operators::Multiply, "*"}, 
+            {Operators::Divide, "/"},
+            {Operators::Mod, "%"},
             {Operators::Negative, "Negative"}, 
             {Operators::Positive, "Positive"}, 
             {Operators::Dec, "Dec"}, 
             {Operators::Inc, "Inc"}, 
             {Operators::Not, "Not"}, 
+            {Operators::Or, "||"}, 
+            {Operators::And, "&&"}, 
+            {Operators::IsEqual, "=="}, 
+            {Operators::IsNotEqual, "!="}, 
+            {Operators::IsLess, "<"}, 
+            {Operators::IsMore, ">"}, 
+            {Operators::IsLessOrEqual, "<="}, 
+            {Operators::IsMoreOrEqual, ">="}, 
             {Operators::Equate, "Equate"}, 
             {Operators::EquateTuple, "EquateTuple"}, 
             {Operators::Return, "Return"}, 
