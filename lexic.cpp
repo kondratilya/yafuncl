@@ -6,9 +6,9 @@ Token *LexicAnalys::Get() {
     States state = States::Start, ostate = States::Start;
     std::string buffer;
 
-    if (double_token) {
-        Token *ret = double_token;
-        double_token = NULL;
+    if (!ungets_.empty()) {
+        Token *ret = ungets_.top();
+        ungets_.pop();
         return ret;
     }
 
@@ -36,7 +36,8 @@ Token *LexicAnalys::Get() {
                                 throw std::runtime_error("Lexic: Unknown operator");
                             }
                             if (buffer == "}") {  // Fake expression, for ';'
-                                double_token = new Token(buffer);
+                                //double_token = new Token(buffer);
+                                UnGet(new Token(buffer));
                                 return new Token(EMPTY);
                             }
                             return new Token(buffer);
@@ -48,7 +49,8 @@ Token *LexicAnalys::Get() {
             case States::Error: 
                 throw std::runtime_error("Lexic: Unexpected symbol");
             case States::End: 
-                double_token = new Token(END);  // Fake expression, for ';'
+                //double_token = new Token(END);  // Fake expression, for ';'
+                UnGet(new Token(END));
                 return new Token(EMPTY);
             break;
             case States::Comment:
@@ -59,6 +61,12 @@ Token *LexicAnalys::Get() {
 
         ostate = state;
     }
-    
 }
 
+void LexicAnalys::UnGet(std::string name) {
+    this->ungets_.push(new Token(name));
+}
+
+void LexicAnalys::UnGet(Token*token) {
+    this->ungets_.push(token);
+}

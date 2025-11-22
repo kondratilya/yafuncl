@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include <set>
+#include <stack>
 #include <stdexcept>
 #include "tokens.h"
 #include "rules.h"
@@ -57,7 +58,9 @@ class LexicAnalys {
     }
 
     std::istream *stream;
-    Token *double_token = NULL;
+    // Token *double_token = NULL;
+    // Token *unget = NULL;
+    std::stack<Token *> ungets_;
 
     public:
     LexicAnalys(std::istream &stream) { 
@@ -66,4 +69,6 @@ class LexicAnalys {
         this->stream = &stream; 
     };
     Token *Get();
+    void UnGet(std::string name);
+    void UnGet(Token *token);
 };

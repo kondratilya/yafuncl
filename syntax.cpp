@@ -103,6 +103,15 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
         case Actions::FunctionCallArg:
             code.push_back(new OperatorInstruction(Operators::CallArg));
         break;
+        case Actions::Return:
+            code.push_back(new OperatorInstruction(Operators::Pop));
+            code.push_back(new OperatorInstruction(Operators::Return));
+        break;
+        case Actions::ReturnEmpty:
+            code.push_back(new OperatorInstruction(Operators::Return));
+            // lexic->UnGet(";");
+            stack.push_back(new Symbol(";"));
+        break;
     }
 }
 

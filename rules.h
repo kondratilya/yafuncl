@@ -2,6 +2,7 @@
 #include <set>
 #include <algorithm>
 #include "symbols.h"
+// #include "instructions.h"
 
 using namespace Symbols;
 
@@ -9,7 +10,7 @@ using NT = NonTerminals;
 
 enum class Actions {
     None=0, Name, Equate, Print,
-    BeginFunction, EndFunction, Return, 
+    BeginFunction, EndFunction, Return, ReturnEmpty,
     Plus, Minus, Multiply, Divide, 
     Negative, Positive, Dec, Inc, Not,
     Pop,
@@ -37,6 +38,8 @@ class Rules {
         {NT::Expressions, {Symbol(NT::Expression)}},
 
         {NT::Expression, {Symbol(NT::E)}, Actions::Pop},
+        {NT::Expression, {Symbol("return"), Symbol(NT::E)}, Actions::Return},
+        {NT::Expression, {Symbol("return"), Symbol(";")}, Actions::ReturnEmpty},  // ReturnEmpty: Messing with stack to mare empty return work;
         {NT::Expression, {Symbol(Tokens::EMPTY)}},
         
         {NT::BlockBegin, {Symbol("{")}, Actions::BeginFunction},

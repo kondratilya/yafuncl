@@ -8,8 +8,6 @@
 #include "variables_table.h"
 #include "instructions.h"
 
-#define VERBOSE true
-
 class SyntaxAnalys {
     Rules rules;
     LexicAnalys *lexic;
@@ -24,6 +22,7 @@ class SyntaxAnalys {
 
     void RunAction(size_t rule_id);
     bool TestRules(Symbol *S);
+
     bool verbose_;
 
     public:
