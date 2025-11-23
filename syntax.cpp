@@ -22,31 +22,45 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
             code.push_back(new VariableInstruction(this->names_lookup.insert(name), &this->names_lookup));
         } break;
         case Actions::TupleEmpty: 
-            tuples_stack.push(0);
-            std::cout << "[]";
+            code.push_back(new TupleInstruction(0));
         break;
         case Actions::TupleOne:
-            tuples_stack.push(1);
-            std::cout << "[1]";
+            code.push_back(new TupleInstruction(1));
         break;
-        case Actions::TupleStart: {
-            tuples_stack.push(2);
-            std::cout << "[2]";
-        } break;
-        case Actions::Tuple: {
-            size_t tuple_size = tuples_stack.top()+1;
-            tuples_stack.pop();
-            tuples_stack.push(tuple_size);
-            std::cout << "[+]";
-        } break;
-        case Actions::TupleEnd: {
-            code.push_back(new TupleInstruction(tuples_stack.top()));
-            tuples_stack.pop();
-            std::cout << "[!]";
-        } break;
+        case Actions::Tuple:
+            tuples_counter_++;
+        break;
+        case Actions::TupleEnd: 
+            code.push_back(new TupleInstruction(tuples_counter_ + 1));
+            tuples_counter_ = 0;
+        break;
         case Actions::Pop: 
             code.push_back(new OperatorInstruction(Operators::Pop));
         break;            
+        case Actions::If:
+            function_definitions.push(code.size());
+            code.push_back(new Instruction());                         //
+            code.push_back(new OperatorInstruction(Operators::Jz));
+        break;
+
+        case Actions::Then: {
+            size_t false_address = function_definitions.top();
+            function_definitions.pop();
+            delete code[false_address];
+            function_definitions.push(code.size());
+            code.push_back(new AddressInstruction(code.size()+3));     // reserved for "Else"
+            code.push_back(new OperatorInstruction(Operators::Jump));
+            code[false_address] = new AddressInstruction(code.size());
+            code.push_back(new EmptyValueInstruction()); 
+        } break;
+        case Actions::Else: {
+            size_t true_address = function_definitions.top();
+            function_definitions.pop();
+            delete code[true_address];
+            code[true_address] = new AddressInstruction(code.size());
+            delete code[true_address+2];
+            code[true_address+2] = new OperatorInstruction(Operators::Pass);
+        } break;
         case Actions::Plus:
             code.push_back(new OperatorInstruction(Operators::Add));
         break;
@@ -101,16 +115,18 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
         case Actions::IsMoreOrEqual: 
             code.push_back(new OperatorInstruction(Operators::IsMoreOrEqual));
         break;
-        case Actions::Equate: 
+        case Actions::Equate:
             code.push_back(new OperatorInstruction(Operators::Equate));
         break;
-        case Actions::EquateTuple: 
-            code.push_back(new TupleInstruction(tuples_stack.top()));
-            tuples_stack.pop();
-            code.push_back(new OperatorInstruction(Operators::EquateTuple));
+        case Actions::Unpack:
+            code.push_back(new OperatorInstruction(Operators::Unpack));
         break;
         case Actions::Print: 
             code.push_back(new OperatorInstruction(Operators::Print));
+        break;
+        case Actions::PrintLn: 
+            code.push_back(new OperatorInstruction(Operators::Print));
+            code.push_back(new OperatorInstruction(Operators::PrintLf));
         break;
         case Actions::BeginFunction: 
             function_definitions.push(code.size());
@@ -123,8 +139,6 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
             code.push_back(new OperatorInstruction(Operators::Return));
             delete code[function_start];
             code[function_start] = new AddressInstruction(code.size());
-            // code[function_start]->type = InstructionTypes::Address;
-            // code[function_start]->Instruction = code.size();
             code.push_back(new AddressInstruction(function_start+2));
         } break;
         case Actions::FunctionCall: 
@@ -214,6 +228,8 @@ bool SyntaxAnalys::Analyse() {
     bool to_read=true;
     Token *R;
     Symbol *S;
+
+    if (verbose_) std::cout << std::endl;
 
     while(true){
         if(to_read) {

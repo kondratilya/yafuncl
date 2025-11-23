@@ -6,7 +6,12 @@
 using namespace std;
 
 int main(int argc, char*argv[]) {
-    std::ifstream source("test.txt"); 
+    std::ifstream source;
+    if (argc > 1) {
+        source.open(argv[1]); 
+    } else {
+        source.open("test.txt"); 
+    }
 
     LexicAnalys lexic(source);
     SyntaxAnalys syntax(lexic);

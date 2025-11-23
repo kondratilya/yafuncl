@@ -1,3 +1,4 @@
+#include <iterator>
 #include "instructions.h"
 
 #define STANDARD_BINARY_OPERATOR(_O_)  { \
@@ -9,8 +10,16 @@
 ReturnCode OperatorInstruction::Run(Context *context) {
     switch (op) {
         case Operators::Jump:
-            context->Jump(context->Pop()->GetAddress().position);
+            context->Jump(context->Pop()->GetAddress());
             return ReturnCode::Continue;
+        case Operators::Jz: {
+            Values::AddressType address = context->Pop()->GetAddress();
+            Values::DefaultValueType condition = context->Pop()->GetValue(context);
+            if (!condition) {
+                context->Jump(address);
+                return ReturnCode::Continue;
+            }
+        } break;
         case Operators::Call: {
             Values::AddressType address = context->Pop()->GetAddress();
             context->Push(address.getContext(context)->Run());
@@ -26,11 +35,31 @@ ReturnCode OperatorInstruction::Run(Context *context) {
             context->Result(new Values::Value(context->Pop()));
         break;
         case Operators::Equate: {
-            Values::Value *v = context->Pop();
-            context->Top()->SetTo(v);
+            Values::Value *value = context->Pop();
+            Values::Value *variable = context->Top();
+            variable->SetTo(value);
+        } break;
+         case Operators::Unpack: {
+            Values::TupleType value = context->Pop()->GetTuple();
+            Values::TupleType dest = context->Top()->GetTuple();
+            auto value_it = value.begin();
+            auto dest_it = dest.begin();
+            while (dest_it!=dest.end()) {
+                if (value_it!=value.end()) {
+                    (*dest_it)->SetTo(*value_it);
+                    std::advance(value_it, 1);
+                } else {
+                    Values::Value empy = Values::Value();
+                    (*dest_it)->SetTo(&empy); 
+                }
+                std::advance(dest_it, 1);
+            }
         } break;
         case Operators::Print: 
             std::cout << "\"" << std::string(*context->Top()) << "\" ";
+        break;
+        case Operators::PrintLf: 
+            std::cout << std::endl;
         break;
         case Operators::Add: STANDARD_BINARY_OPERATOR(+); break;
         case Operators::Substract: STANDARD_BINARY_OPERATOR(-); break;
@@ -72,6 +101,11 @@ ReturnCode OperatorInstruction::Run(Context *context) {
 ReturnCode VariableInstruction::Run(Context *context) {
    context->Push(context->GetVariable(index));
     return ReturnCode::None;
+}
+
+ReturnCode EmptyValueInstruction::Run(Context *context) {
+    context->Push(new Values::Value());
+    return ReturnCode::None;    
 }
 
 ReturnCode AddressInstruction::Run(Context *context) {

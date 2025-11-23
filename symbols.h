@@ -15,20 +15,17 @@ namespace Symbols {
         Expression,
         BlockBegin, Block, 
         FunctionCall, 
-        FunctionDefinition, 
-        Tuple, TupleDone,
+        Tuple, List,
         Modifyers, Modifyer,
+        If, IfThen, IfElse,
     };
 
     class Symbol {
         public:
-
         std::string name;
         NonTerminals non_terminal;
         bool is_terminal;
         Tokens::Token *token=NULL;
-        
-        public:
 
         Symbol(std::string terminal) {
             is_terminal = true;

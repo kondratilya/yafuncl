@@ -46,16 +46,7 @@ class LexicAnalys {
     };
     std::set<std::string> keywords = {};
 
-    Terminals terminal(int c) {
-        if (c < 0) { 
-            return Terminals::Eof; 
-        }
-        for (auto const& term : terminals) {
-            if (term.second.find(static_cast<char>(c)) != std::string::npos)
-                return term.first;
-        }
-        throw std::runtime_error("Lexic: Unknown symbol");
-    }
+    Terminals terminal(int c);
 
     std::istream *stream;
     // Token *double_token = NULL;
@@ -66,7 +57,7 @@ class LexicAnalys {
     LexicAnalys(std::istream &stream) { 
         Rules r;
         r.GetTerminalsList(keywords);
-        this->stream = &stream; 
+        this->stream = &stream;
     };
     Token *Get();
     void UnGet(std::string name);

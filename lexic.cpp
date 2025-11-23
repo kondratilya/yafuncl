@@ -1,6 +1,19 @@
 #include "lexic.h"
 
 using namespace Tokens;
+using namespace std::string_literals;
+
+LexicAnalys::Terminals LexicAnalys::terminal(int c) {
+    if (c < 0) { 
+        return Terminals::Eof; 
+    }
+    for (auto const& term : terminals) {
+        if (term.second.find(static_cast<char>(c)) != std::string::npos)
+            return term.first;
+    }
+    throw std::runtime_error("Lexic: Unknown symbol "s + (char)(c));
+}
+
 
 Token *LexicAnalys::Get() {
     States state = States::Start, ostate = States::Start;
@@ -27,20 +40,20 @@ Token *LexicAnalys::Get() {
                             if (keywords.count(buffer))
                                 return new Token(buffer);
                             return new Token(ID, buffer);
-                        case States::Operator:
+                        case States::Operator: {
+                            std::string read_operators = buffer;
                             while (!buffer.empty() && !keywords.count(buffer)) {
                                 buffer.pop_back();
                                 this->stream->unget();
                             }
                             if (buffer.empty()){
-                                throw std::runtime_error("Lexic: Unknown operator");
+                                throw std::runtime_error("Lexic: Unknown operator "s + read_operators);
                             }
                             if (buffer == "}") {  // Fake expression, for ';'
-                                //double_token = new Token(buffer);
                                 UnGet(new Token(buffer));
                                 return new Token(EMPTY);
                             }
-                            return new Token(buffer);
+                        } return new Token(buffer);
                         default: 
                             buffer = "";
                     }
@@ -49,11 +62,12 @@ Token *LexicAnalys::Get() {
             case States::Error: 
                 throw std::runtime_error("Lexic: Unexpected symbol");
             case States::End: 
-                //double_token = new Token(END);  // Fake expression, for ';'
-                UnGet(new Token(END));
+                UnGet(new Token(END));      // Fake expression, for ';'
                 return new Token(EMPTY);
             break;
             case States::Comment:
+                while (!stream->eof() && stream->get()!='\n'); 
+                this->stream->unget();
             break;
             default:
                 buffer += symbol;

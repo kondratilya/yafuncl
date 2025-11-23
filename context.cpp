@@ -62,8 +62,12 @@ void Context::Push(Values::Value *v) {
     stack.push(v);
 }
 
-void Context::Jump(size_t a) {
-    pointer = a;
+void Context::Jump(size_t position) {
+    pointer = position;
+}
+
+void Context::Jump(const Values::AddressType &address) {
+    pointer = address.position;
 }
 
 void Context::Result(Values::Value *result) {

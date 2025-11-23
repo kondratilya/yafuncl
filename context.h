@@ -38,7 +38,8 @@ class Context {
     Values::Value* Top();
     void Push(Values::Value *v);
 
-    void Jump(size_t a);
+    void Jump(size_t position);
+    void Jump(const Values::AddressType &address);
 
     void Result(Values::Value *result);
     

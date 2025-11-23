@@ -17,9 +17,12 @@ std::map<NonTerminals, std::string> str_non_terminals = {
     {NonTerminals::Expression, "Expression"},
     {NonTerminals::BlockBegin, "BlockBegin"}, {NonTerminals::Block, "Block"},  
     {NonTerminals::FunctionCall, "FunctionCall"}, 
-    {NonTerminals::Tuple, "Tuple"}, {NonTerminals::TupleDone, "TupleDone"},
+    {NonTerminals::Tuple, "Tuple"}, {NonTerminals::List, "List"},
     {NonTerminals::Modifyers, "Modifyers"}, 
     {NonTerminals::Modifyer, "Modifyer"}, 
+    {NonTerminals::If, "If"},
+    {NonTerminals::IfThen, "IfThen"},
+    {NonTerminals::IfElse, "IfElse"},
 };
 std::ostream &operator<<(std::ostream &os, Symbol &s) { 
     if (s.IsTerminal()) {

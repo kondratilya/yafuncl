@@ -12,10 +12,12 @@
 class Context;
 
 enum class Operators {
+    Pass,
     Add, Substract, Multiply, Divide, Mod,
     Negative, Positive, Dec, Inc, Not,
     Or, And, IsEqual, IsNotEqual, IsLess, IsMore, IsLessOrEqual, IsMoreOrEqual,
-    Equate, Return, Jump, Call, CallArg, Pop, Print, EquateTuple,
+    Equate, Return, Jump, Jz, Call, CallArg, Pop, Unpack,
+    Print, PrintLf,
 };
 
 enum class ReturnCode {
@@ -37,6 +39,7 @@ class OperatorInstruction: public Instruction {
     }
     operator std::string() const override { 
         std::map<Operators, std::string> str_operators = {
+            {Operators::Pass, "Pass"}, 
             {Operators::Add, "+"}, 
             {Operators::Substract, "-"}, 
             {Operators::Multiply, "*"}, 
@@ -56,13 +59,15 @@ class OperatorInstruction: public Instruction {
             {Operators::IsLessOrEqual, "<="}, 
             {Operators::IsMoreOrEqual, ">="}, 
             {Operators::Equate, "Equate"}, 
-            {Operators::EquateTuple, "EquateTuple"}, 
+            {Operators::Unpack, "Unpack"}, 
             {Operators::Return, "Return"}, 
             {Operators::Jump, "Jump"}, 
+            {Operators::Jz, "Jz"}, 
             {Operators::Call, "Call"}, 
             {Operators::CallArg, "CallArg"}, 
             {Operators::Pop, "Pop"}, 
             {Operators::Print, "Print"},
+            {Operators::PrintLf, "\\n"},
         };   
         return str_operators[static_cast<Operators>(op)]; 
     }
@@ -80,6 +85,16 @@ class VariableInstruction: public Instruction {
     }
     operator std::string() const override { 
         std::ostringstream s; s << "[" << index << "]"; return s.str();
+    }
+    ReturnCode Run(Context *context) override;
+};
+
+class EmptyValueInstruction: public Instruction {
+    public:
+    EmptyValueInstruction(): Instruction() {
+    }
+    operator std::string() const override { 
+        std::ostringstream s; s << "[]"; return s.str();
     }
     ReturnCode Run(Context *context) override;
 };
