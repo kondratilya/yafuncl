@@ -25,6 +25,7 @@ namespace Values {
         TupleType() : std::list<Value*>() {}
         TupleType(std::initializer_list<Value*> init) : std::list<Value*>(init) {};
         operator std::string() const;
+        std::string str(Context *context=NULL) const;
     };
     
     enum class ValueTypes {
@@ -51,6 +52,6 @@ namespace Values {
         TupleType& GetTuple(Context* context=NULL);
 
         operator std::string();
-
+        std::string str(Context* context=NULL);
     };
 }

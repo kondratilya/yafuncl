@@ -17,7 +17,7 @@ enum class Operators {
     Negative, Positive, Dec, Inc, Not,
     Or, And, IsEqual, IsNotEqual, IsLess, IsMore, IsLessOrEqual, IsMoreOrEqual,
     Equate, Return, Jump, Jz, Call, CallArg, Pop, Unpack,
-    Print, PrintLf,
+    Print, PrintLf, PrintChar,
 };
 
 enum class ReturnCode {

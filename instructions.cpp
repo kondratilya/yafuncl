@@ -58,6 +58,9 @@ ReturnCode OperatorInstruction::Run(Context *context) {
         case Operators::Print: 
             std::cout << "\"" << std::string(*context->Top()) << "\" ";
         break;
+        case Operators::PrintChar: 
+            std::cout << context->Top()->str(context);
+        break;
         case Operators::PrintLf: 
             std::cout << std::endl;
         break;

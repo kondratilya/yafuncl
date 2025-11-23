@@ -11,7 +11,7 @@ using NT = NonTerminals;
 
 enum class Actions {
     None=0, Name, Equate, 
-    Print, PrintLn,
+    Print, PrintLn, PrintChar,
     BeginFunction, EndFunction, Return, ReturnEmpty,
     Plus, Minus, Multiply, Divide, Mod,
     Negative, Positive, Dec, Inc, Not,
@@ -20,6 +20,7 @@ enum class Actions {
     Tuple, TupleEmpty, TupleOne, TupleEnd, Unpack,
     FunctionCall, FunctionCallArg,
     If, Then, Else,
+    While, WhileDo, WhileEnd,
 };
 
 
@@ -96,12 +97,13 @@ class Rules {
         {NT::T8, {"not"s, NT::T8}, Actions::Not},
         {NT::T8, {"@"s, NT::T8}, Actions::Print},
         {NT::T8, {"@@"s, NT::T8}, Actions::PrintLn},
+        {NT::T8, {"@@@"s, NT::T8}, Actions::PrintChar},
         {NT::T8, {NT::T9}},
 
         {NT::FunctionCall, {"=>"s, NT::Block}, Actions::FunctionCall},
         {NT::FunctionCall, {"=>"s, NT::NAME}, Actions::FunctionCall},
-        {NT::FunctionCall, {NT::E, "=>"s, NT::Block}, Actions::FunctionCallArg},
-        {NT::FunctionCall, {NT::E, "=>"s, NT::NAME}, Actions::FunctionCallArg},
+        {NT::FunctionCall, {NT::T9, "=>"s, NT::Block}, Actions::FunctionCallArg},
+        {NT::FunctionCall, {NT::T9, "=>"s, NT::NAME}, Actions::FunctionCallArg},
 
         {NT::T9, {NT::FunctionCall}},
         {NT::T9, {NT::LVALUE, "="s, NT::E}, Actions::Equate},
@@ -112,11 +114,16 @@ class Rules {
         {NT::T9, {NT::LVALUE}},
         {NT::T9, {NT::IfThen}},
         {NT::T9, {NT::IfElse}},
+        {NT::T9, {NT::WhileEnd}},
+        {NT::T9, {NT::WhileDo}, Actions::WhileEnd},
         
         {NT::If, {"if"s, NT::E}, Actions::If},
         {NT::IfThen, {NT::If, ":"s, NT::E}, Actions::Then},
         {NT::IfElse, {NT::IfThen, "else"s, ":"s, NT::E}, Actions::Else},
 
+        {NT::While, {"while"s}, Actions::While},
+        {NT::WhileDo, {NT::While, NT::E}, Actions::WhileDo},
+        {NT::WhileEnd, {NT::WhileDo, ":"s, NT::E}, Actions::WhileEnd},
         
         {NT::Tuple, {"("s, NT::List, ")"s}, Actions::TupleEnd},
         {NT::Tuple, {"("s, NT::T1, ","s, ")"s}, Actions::TupleOne},

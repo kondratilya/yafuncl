@@ -18,6 +18,7 @@ namespace Symbols {
         Tuple, List,
         Modifyers, Modifyer,
         If, IfThen, IfElse,
+        While, WhileDo, WhileEnd,
     };
 
     class Symbol {

@@ -49,8 +49,6 @@ AddressType& Value::GetAddress() const {
 }
 
 TupleType& Value::GetTuple(Context* context) {
-    TupleType v;
-    
     switch (type) {
         case ValueTypes::Undefined:
             return *(new TupleType());                /// !!! - how to delete??? !!!!
@@ -70,6 +68,21 @@ Value::operator std::string() {
         case ValueTypes::Tuple: os << std::string(GetTuple()) ; break;
         case ValueTypes::Undefined: os << "?"; break;
         default: os << "???"; break;
+    }
+    return os.str(); 
+}
+
+std::string Value::str(Context* context) { 
+    std::ostringstream os;
+    switch (type) {
+        case ValueTypes::Default: 
+        case ValueTypes::Address: 
+            os << (char)(GetValue(context)); break;
+        case ValueTypes::Tuple: 
+            os << GetTuple(context).str(context);
+        break;
+        case ValueTypes::Undefined: os << " "; break;
+        default: os << "?"; break;
     }
     return os.str(); 
 }
@@ -105,7 +118,13 @@ AddressType::operator std::string() const {
 TupleType::operator std::string() const { 
     std::ostringstream os; 
     os << "(";
-    for (auto el: *this) os << std::string(*el) << ", "; 
+    for (auto el: *this) os << std::string(*el) << ", ";
     os << ")";
+    return os.str();
+};
+
+std::string TupleType::str(Context *context) const { 
+    std::ostringstream os; 
+    for (auto el: *this) os << el->str(context); 
     return os.str();
 };

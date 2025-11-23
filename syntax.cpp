@@ -39,10 +39,9 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
         break;            
         case Actions::If:
             function_definitions.push(code.size());
-            code.push_back(new Instruction());                         //
+            code.push_back(new Instruction());
             code.push_back(new OperatorInstruction(Operators::Jz));
         break;
-
         case Actions::Then: {
             size_t false_address = function_definitions.top();
             function_definitions.pop();
@@ -51,7 +50,7 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
             code.push_back(new AddressInstruction(code.size()+3));     // reserved for "Else"
             code.push_back(new OperatorInstruction(Operators::Jump));
             code[false_address] = new AddressInstruction(code.size());
-            code.push_back(new EmptyValueInstruction()); 
+            code.push_back(new EmptyValueInstruction());
         } break;
         case Actions::Else: {
             size_t true_address = function_definitions.top();
@@ -60,6 +59,23 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
             code[true_address] = new AddressInstruction(code.size());
             delete code[true_address+2];
             code[true_address+2] = new OperatorInstruction(Operators::Pass);
+        } break;
+        case Actions::While:
+            function_definitions.push(code.size());     // before condition: after loop jump here
+        break;
+        case Actions::WhileDo:
+            function_definitions.push(code.size());
+            code.push_back(new Instruction());          // end: for false - jump to end
+            code.push_back(new OperatorInstruction(Operators::Jz));
+        break;
+        case Actions::WhileEnd: {
+            size_t end_jump_position = function_definitions.top();
+            function_definitions.pop();
+            size_t loop_start_position = function_definitions.top();
+            function_definitions.pop();
+            code.push_back(new AddressInstruction(loop_start_position));
+            code.push_back(new OperatorInstruction(Operators::Jump));
+            code[end_jump_position] = new AddressInstruction(code.size());
         } break;
         case Actions::Plus:
             code.push_back(new OperatorInstruction(Operators::Add));
@@ -128,6 +144,9 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
             code.push_back(new OperatorInstruction(Operators::Print));
             code.push_back(new OperatorInstruction(Operators::PrintLf));
         break;
+        case Actions::PrintChar: 
+            code.push_back(new OperatorInstruction(Operators::PrintChar));
+        break;
         case Actions::BeginFunction: 
             function_definitions.push(code.size());
             code.push_back(new Instruction());
@@ -153,7 +172,6 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
         break;
         case Actions::ReturnEmpty:
             code.push_back(new OperatorInstruction(Operators::Return));
-            // lexic->UnGet(";");
             stack.push_back(new Symbol(";"));
         break;
     }
