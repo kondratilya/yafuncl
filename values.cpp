@@ -82,7 +82,7 @@ AddressType::AddressType(size_t position, Context *context){
 Context *AddressType::getContext(Context *fallback) {
     // Если у адреса есть контекст, значит из него уже вышли через Return, можно делать Jump
     if (this->context) {
-        this->context->Jump(this->position); // Этот Jump будет при вызове Return контекста. Тут только для наглядности
+        this->context->Result()->Jump(this->position); // Этот Jump будет при вызове Return контекста. Тут только для наглядности
         return this->context;
     }
     return new Context(fallback, this->position);
@@ -95,6 +95,10 @@ void AddressType::SetContext(Context *context) {
 AddressType::operator std::string() const { 
     std::ostringstream os; 
     os << "<" << this->position << ">";
+    // if (!context)
+    //     os << "<" << this->position << ">";
+    // else 
+    //     os << "<" << this->position << ":"<< context <<">";
     return os.str();
 };
 

@@ -70,7 +70,20 @@ ReturnCode OperatorInstruction::Run(Context *context) {
             Values::DefaultValueType value1 = context->Pop()->GetValue(context);
             context->Push(new Values::Value(value1 - (int)(value1/value2) * value2)); 
         } break;
-        case Operators::Or: STANDARD_BINARY_OPERATOR(||); break;
+        case Operators::Or: {
+            Values::Value *value2 = context->Pop();
+            Values::DefaultValueType value1value = context->Pop()->GetValue(context);
+            if (value1value) {
+                context->Push(new Values::Value(value1value)); 
+                break;
+            }
+            Values::DefaultValueType value2value = value2->GetValue(context);
+            if (value2) {
+                context->Push(new Values::Value(value2value)); 
+                break;
+            }
+            context->Push(new Values::Value(value1value));
+        } break;
         case Operators::And: STANDARD_BINARY_OPERATOR(&&); break;
         case Operators::IsEqual: STANDARD_BINARY_OPERATOR(==); break;
         case Operators::IsNotEqual: STANDARD_BINARY_OPERATOR(!=); break;
@@ -91,9 +104,8 @@ ReturnCode OperatorInstruction::Run(Context *context) {
             context->Push(new Values::Value(context->Pop()->GetValue(context)-1));
         break;
         case Operators::Not:
-            context->Push(new Values::Value(static_cast<Values::DefaultValueType>(!context->Pop()->GetValue(context))));
-         break;
-
+            context->Push(new Values::Value(!context->Pop()->GetValue(context)));
+        break;
     }
     return ReturnCode::None;
 }

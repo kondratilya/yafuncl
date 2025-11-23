@@ -38,10 +38,10 @@ class Context {
     Values::Value* Top();
     void Push(Values::Value *v);
 
-    void Jump(size_t position);
-    void Jump(const Values::AddressType &address);
+    Context* Jump(size_t position);
+    Context* Jump(const Values::AddressType &address);
 
-    void Result(Values::Value *result);
+    Context* Result(Values::Value *result=NULL);
     
     Context(SyntaxAnalys &syntax, size_t position=0);
 
