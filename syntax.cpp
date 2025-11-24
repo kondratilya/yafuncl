@@ -52,6 +52,9 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
             code[false_address] = new AddressInstruction(code.size());
             code.push_back(new EmptyValueInstruction());
         } break;
+        case Actions::ThenEnd:
+            function_definitions.pop();
+        break;
         case Actions::Else: {
             size_t true_address = function_definitions.top();
             function_definitions.pop();
@@ -167,19 +170,59 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
             code.push_back(new OperatorInstruction(Operators::CallArg));
         break;
         case Actions::Return:
+            function_definitions.push(code.size());
+            code.push_back(new AddressInstruction(code.size()+2));
+            code.push_back(new OperatorInstruction(Operators::Jump));
+
             code.push_back(new OperatorInstruction(Operators::Pop));
             code.push_back(new OperatorInstruction(Operators::Return));
+
+            code.push_back(new AddressInstruction(code.size()+2));
+            code.push_back(new OperatorInstruction(Operators::Jump));          
         break;
         case Actions::ReturnEmpty:
+            function_definitions.push(code.size());
+            code.push_back(new AddressInstruction(code.size()+2));
+            code.push_back(new OperatorInstruction(Operators::Jump));
+
             code.push_back(new OperatorInstruction(Operators::Return));
-            stack.push_back(new Symbol(";"));
+
+            code.push_back(new AddressInstruction(code.size()+2));
+            code.push_back(new OperatorInstruction(Operators::Jump));
+        break;
+        case Actions::ReturnIf: {
+            size_t skip_to_condition = function_definitions.top();
+            function_definitions.pop();
+            delete code[skip_to_condition];
+            code[skip_to_condition] = new AddressInstruction(skip_to_condition + 6);
+            code.push_back(new AddressInstruction(skip_to_condition+2));
+            code.push_back(new OperatorInstruction(Operators::Jnz));
+            code.push_back(new OperatorInstruction(Operators::Pop));
+            delete code[skip_to_condition+4];
+            code[skip_to_condition+4] = new AddressInstruction(code.size());
+        } break;
+        case Actions::ReturnEmptyIf: {
+            size_t skip_to_condition = function_definitions.top();
+            function_definitions.pop();
+            delete code[skip_to_condition];
+            code[skip_to_condition] = new AddressInstruction(skip_to_condition + 5);
+            code.push_back(new AddressInstruction(skip_to_condition+2));
+            code.push_back(new OperatorInstruction(Operators::Jnz));
+            delete code[skip_to_condition+3];
+            code[skip_to_condition+3] = new AddressInstruction(code.size());
+        } break;
+        case Actions::ReturnUnconditional: 
+            function_definitions.pop();
+            delete code.back();
+            code.pop_back();
+            delete code.back();
+            code.pop_back();
         break;
     }
 }
 
-bool SyntaxAnalys::TestRules(Symbol *S) {
+bool SyntaxAnalys::FindBeginning(Symbol *S, size_t &rule) {
     bool beginning;
-
     int search_from = stack.size()-rules.MaxRuleSize();
     if (search_from < 0)search_from=0;
 
@@ -197,12 +240,17 @@ bool SyntaxAnalys::TestRules(Symbol *S) {
             if (beginning) {
                 if (rules[r].right.size()>j-i && rules[r].right[j-i] == *S) {
                     if (verbose_) std::cout << "B[" << std::setw(2) << r << "] ";
+                    rule = r;
                     return true;
                 }
             }
         }
     }
+    return false;
+}
 
+bool SyntaxAnalys::FindReduction(size_t &rule, size_t &head) {
+    bool found = true;
     for (size_t h=0; h<heads.size(); ++h) {
         for (size_t r=0; r<rules.size(); ++r){
             bool found = true;
@@ -215,22 +263,38 @@ bool SyntaxAnalys::TestRules(Symbol *S) {
                 }
             }
             if (found) {
-                if (verbose_) std::cout << " [" << std::setw(2) << r << "] ";
-                if (rules[r].left==NT::ROOT && stack.size() != rules[r].right.size()) {
-                    throw std::runtime_error("Syntax: Early end");
-                }
-                for (size_t i=0; i<rules[r].right.size(); ++i) {
-                    delete stack.back();
-                    stack.pop_back();
-                }
-                stack.push_back(new Symbol(rules[r].left));
-                heads.resize(h+1);
-
-                RunAction(r);
-                return(false);
-
+                rule=r;
+                head=h;
+                return true;
             }
         }
+    }
+    return false;    
+}
+
+bool SyntaxAnalys::TestRules(Symbol *S) {
+    size_t beginning, rule, head;
+
+    if (FindBeginning(S, beginning)) {
+        return true;
+    }
+
+    if (FindReduction(rule, head)) {
+        if (verbose_) std::cout << " [" << std::setw(2) << rule << "] ";
+
+        if (rules[rule].left==NT::ROOT && stack.size() != rules[rule].right.size()) {
+            throw std::runtime_error("Syntax: Early end");
+        }
+        for (size_t i=0; i<rules[rule].right.size(); ++i) {
+            delete stack.back();
+            stack.pop_back();
+        }
+        stack.push_back(new Symbol(rules[rule].left));
+        heads.resize(head+1);
+
+        RunAction(rule);
+
+        return(false);
     }
 
     heads.push_back(stack.size());
@@ -252,6 +316,15 @@ bool SyntaxAnalys::Analyse() {
     while(true){
         if(to_read) {
             R = this->lexic->Get();
+            if (*R=="return") {
+                Token *R_next = this->lexic->Get();
+                this->lexic->UnGet(R_next);
+                if (*R_next==";" || *R_next=="if") {
+                    delete R;
+                    this->lexic->UnGet("$$$returnempty$$$");
+                    continue;
+                }
+            }
             S = new Symbol(R);
             if (S->IsName()) {
                 names_stack.push(R->Value());
@@ -275,13 +348,6 @@ bool SyntaxAnalys::Analyse() {
         if(stack.size()==1 && *stack[0] == Symbol(NT::ROOT)) {       
             return true;
 
-            /*if (Token(END)==R) {
-                std::cout << " <OK>";
-                return true;
-            } else {
-                throw std::runtime_error("Syntax: Early end");
-                return false;
-            }*/
         } 
     }
     return false;

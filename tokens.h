@@ -20,6 +20,7 @@ namespace Tokens {
         std::string Id() const { return this->id; }
         std::string Value() const { return this->value; }
         bool IsName() const { return id == ID; }
+        bool operator== (std::string id) const { return this->id == id; }
         bool operator== (const Token *T) const { return this->id == T->id; }
         bool operator!= (const Token *T) const { return !(*this == T); }
     };

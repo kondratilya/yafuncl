@@ -128,3 +128,11 @@ std::string TupleType::str(Context *context) const {
     for (auto el: *this) os << el->str(context); 
     return os.str();
 };
+
+TupleType TupleType::Clone(const TupleType &src) {
+    TupleType dest;
+    for (auto element: src) {
+        dest.push_back(new Value(element));
+    }
+    return dest;
+}

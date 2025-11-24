@@ -16,7 +16,7 @@ enum class Operators {
     Add, Substract, Multiply, Divide, Mod,
     Negative, Positive, Dec, Inc, Not,
     Or, And, IsEqual, IsNotEqual, IsLess, IsMore, IsLessOrEqual, IsMoreOrEqual,
-    Equate, Return, Jump, Jz, Call, CallArg, Pop, Unpack,
+    Equate, Return, Jump, Jz, Jnz, Call, CallArg, Pop, Unpack,
     Print, PrintLf, PrintChar,
 };
 
@@ -63,6 +63,7 @@ class OperatorInstruction: public Instruction {
             {Operators::Return, "Return"}, 
             {Operators::Jump, "Jump"}, 
             {Operators::Jz, "Jz"}, 
+            {Operators::Jnz, "Jnz"}, 
             {Operators::Call, "Call"}, 
             {Operators::CallArg, "CallArg"}, 
             {Operators::Pop, "Pop"}, 

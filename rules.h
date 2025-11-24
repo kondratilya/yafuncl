@@ -2,7 +2,6 @@
 #include <set>
 #include <algorithm>
 #include "symbols.h"
-// #include "instructions.h"
 
 using namespace Symbols;
 using namespace std::string_literals;
@@ -12,14 +11,15 @@ using NT = NonTerminals;
 enum class Actions {
     None=0, Name, Equate, 
     Print, PrintLn, PrintChar,
-    BeginFunction, EndFunction, Return, ReturnEmpty,
+    BeginFunction, EndFunction, 
+    Return, ReturnEmpty, ReturnIf, ReturnEmptyIf, ReturnUnconditional,
     Plus, Minus, Multiply, Divide, Mod,
     Negative, Positive, Dec, Inc, Not,
     Or, And, IsEqual, IsNotEqual, IsLess, IsMore, IsLessOrEqual, IsMoreOrEqual, 
     Pop,
     Tuple, TupleEmpty, TupleOne, TupleEnd, Unpack,
     FunctionCall, FunctionCallArg,
-    If, Then, Else,
+    If, Then, ThenEnd, Else,
     While, WhileDo, WhileEnd,
 };
 
@@ -42,9 +42,14 @@ class Rules {
         {NT::Expressions, {NT::Expression}},
 
         {NT::Expression, {NT::E}, Actions::Pop},
-        {NT::Expression, {"return"s, NT::E}, Actions::Return},
-        {NT::Expression, {"return"s, ";"s}, Actions::ReturnEmpty},  // ReturnEmpty: Messing with stack to mare empty return work;
+        {NT::Expression, {NT::Return}, Actions::ReturnUnconditional},
+        {NT::Expression, {NT::Return, "if"s, NT::E}, Actions::ReturnIf},
+        {NT::Expression, {NT::ReturnEmpty}, Actions::ReturnUnconditional},
+        {NT::Expression, {NT::ReturnEmpty, "if"s, NT::E}, Actions::ReturnEmptyIf},
         {NT::Expression, {Symbol(Tokens::EMPTY)}},
+
+        {NT::Return, {"return"s, NT::E}, Actions::Return},
+        {NT::ReturnEmpty, {"$$$returnempty$$$"s}, Actions::ReturnEmpty},  // ReturnEmpty: Messing with stack to mare empty return work;
         
         {NT::BlockBegin, {"{"s}, Actions::BeginFunction},
         {NT::BlockBegin, {NT::Modifyers, NT::BlockBegin}},
@@ -112,7 +117,7 @@ class Rules {
         {NT::T9, {"("s, NT::E, ")"s}},
         {NT::T9, {NT::Block}},
         {NT::T9, {NT::LVALUE}},
-        {NT::T9, {NT::IfThen}},
+        {NT::T9, {NT::IfThen}, Actions::ThenEnd},
         {NT::T9, {NT::IfElse}},
         {NT::T9, {NT::WhileEnd}},
         {NT::T9, {NT::WhileDo}, Actions::WhileEnd},

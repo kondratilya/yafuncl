@@ -19,6 +19,7 @@ namespace Symbols {
         Modifyers, Modifyer,
         If, IfThen, IfElse,
         While, WhileDo, WhileEnd,
+        Return, ReturnEmpty,
     };
 
     class Symbol {

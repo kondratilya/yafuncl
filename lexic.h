@@ -60,6 +60,6 @@ class LexicAnalys {
         this->stream = &stream;
     };
     Token *Get();
-    void UnGet(std::string name);
+    void UnGet(std::string id);
     void UnGet(Token *token);
 };

@@ -77,8 +77,8 @@ Token *LexicAnalys::Get() {
     }
 }
 
-void LexicAnalys::UnGet(std::string name) {
-    this->ungets_.push(new Token(name));
+void LexicAnalys::UnGet(std::string id) {
+    this->ungets_.push(new Token(id));
 }
 
 void LexicAnalys::UnGet(Token*token) {

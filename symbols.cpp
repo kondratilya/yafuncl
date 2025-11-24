@@ -26,6 +26,8 @@ std::map<NonTerminals, std::string> str_non_terminals = {
     {NonTerminals::While, "While"},
     {NonTerminals::WhileDo, "WhileDo"},
     {NonTerminals::WhileEnd, "WhileEnd"},
+    {NonTerminals::Return, "Return"},
+    {NonTerminals::ReturnEmpty, "ReturnEmpty"},
 };
 std::ostream &operator<<(std::ostream &os, Symbol &s) { 
     if (s.IsTerminal()) {

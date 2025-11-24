@@ -20,6 +20,14 @@ ReturnCode OperatorInstruction::Run(Context *context) {
                 return ReturnCode::Continue;
             }
         } break;
+        case Operators::Jnz: {
+            Values::AddressType address = context->Pop()->GetAddress();
+            Values::DefaultValueType condition = context->Pop()->GetValue(context);
+            if (condition) {
+                context->Jump(address);
+                return ReturnCode::Continue;
+            }
+        } break;
         case Operators::Call: {
             Values::AddressType address = context->Pop()->GetAddress();
             context->Push(address.getContext(context)->Run());
@@ -40,7 +48,7 @@ ReturnCode OperatorInstruction::Run(Context *context) {
             variable->SetTo(value);
         } break;
          case Operators::Unpack: {
-            Values::TupleType value = context->Pop()->GetTuple();
+            Values::TupleType value = Values::TupleType::Clone(context->Pop()->GetTuple());
             Values::TupleType dest = context->Top()->GetTuple();
             auto value_it = value.begin();
             auto dest_it = dest.begin();

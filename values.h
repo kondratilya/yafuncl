@@ -26,6 +26,7 @@ namespace Values {
         TupleType(std::initializer_list<Value*> init) : std::list<Value*>(init) {};
         operator std::string() const;
         std::string str(Context *context=NULL) const;
+        static TupleType Clone(const TupleType &src);
     };
     
     enum class ValueTypes {

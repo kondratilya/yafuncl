@@ -21,6 +21,8 @@ class SyntaxAnalys {
     size_t tuples_counter_ = 0;
 
     void RunAction(size_t rule_id);
+    bool FindBeginning(Symbol *S, size_t &rule);
+    bool FindReduction(size_t &rule, size_t &head);
     bool TestRules(Symbol *S);
 
     bool verbose_;
