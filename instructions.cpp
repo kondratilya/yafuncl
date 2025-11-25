@@ -2,9 +2,10 @@
 #include "instructions.h"
 
 #define STANDARD_BINARY_OPERATOR(_O_)  { \
-                Values::DefaultValueType value2 = context->Pop()->GetValue(context); \
-                Values::DefaultValueType value1 = context->Pop()->GetValue(context); \
-                context->Push(new Values::Value(value1 _O_ value2)); \
+                Values::Value *value2 = context->Pop(); \
+                Values::Value *value1 = context->Pop(); \
+                context->Push(new Values::Value(value1->GetValue(context) _O_ value2->GetValue(context))); \
+                Values::Value::Delete(value1); Values::Value::Delete(value2); \
             }
 
 ReturnCode OperatorInstruction::Run(Context *context) {
@@ -92,10 +93,15 @@ ReturnCode OperatorInstruction::Run(Context *context) {
         case Operators::PrintChar: 
             std::cout << context->Top()->str(context);
         break;
+        case Operators::PrintMyName: 
+            std::cout << context->Top()->GetVariableName() << " ";
+        break;
         case Operators::PrintLf: 
             std::cout << std::endl;
         break;
-        case Operators::Add: STANDARD_BINARY_OPERATOR(+); break;
+        case Operators::Add: 
+            STANDARD_BINARY_OPERATOR(+); 
+        break;
         case Operators::Substract: STANDARD_BINARY_OPERATOR(-); break;
         case Operators::Multiply: STANDARD_BINARY_OPERATOR(*); break;
         case Operators::Divide: STANDARD_BINARY_OPERATOR(/); break;

@@ -26,14 +26,21 @@ class Context {
 
     Context *Parent() { return parent; }
 
+    ~Context() {
+        // Контекст должен удалить значения из своей таблицы, но пока контексты не удаляю
+    }
+
     Values::Value *SearchVariable(VariableId id, AccessType access_type=AccessType::Default);
     Values::Value *CreateVariable(VariableId id);
     Values::Value *GetVariable(VariableId id, AccessType access_type=AccessType::Default);
+    std::string GetVariableName(VariableId id);
+
     Context *WithArgument(Values::Value* arg=NULL);
 
     Context(Context *parent, size_t position=0);
     
     Values::Value* Pop();
+    void PopDelete();
     Values::Value* Top();
     void Push(Values::Value *v);
 

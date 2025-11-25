@@ -19,7 +19,7 @@ Values::Value *Context::SearchVariable(VariableId id, AccessType access_type) {
 }
 
 Values::Value *Context::CreateVariable(VariableId id) {
-    Values::Value* val = new Values::Value();
+    Values::Value* val = (new Values::Value())->LinkToVariable(id, this);
     lookup[id] = val;
     return val;
 }
@@ -34,6 +34,10 @@ Values::Value *Context::GetVariable(VariableId id, AccessType access_type) {
     if (access_type == AccessType::Outer) 
         throw std::runtime_error("Exec: Trying to access abscent Outer variable");
     return CreateVariable(id);
+}
+
+std::string Context::GetVariableName(VariableId id) {
+    return syntax->GetVariableName(id);
 }
 
 Context::Context(Context *parent, size_t position): Context(*(parent->syntax), position) {
@@ -58,6 +62,13 @@ Values::Value *Context::Pop() {
     Values::Value *v = stack.top();
     stack.pop();
     return v;
+}
+
+void Context::PopDelete() {
+    if (!stack.size()) 
+        return;
+    Values::Value::Delete(stack.top());
+    stack.pop();
 }
 
 Values::Value *Context::Top() {

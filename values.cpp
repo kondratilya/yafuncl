@@ -23,6 +23,31 @@ Value::Value() {
 Value::Value(Value* value) {            //clone value
     SetTo(value);
 }
+Value::~Value() {
+    // switch (type) {
+    //     case ValueTypes::Undefined:break;
+    //     case ValueTypes::Default:
+    //         delete (DefaultValueType*)value;
+    //     case ValueTypes::Address:
+    //         delete (AddressType*)value;
+    //     case ValueTypes::Tuple:
+    //         delete (TupleType*)value;
+    // }
+}
+
+Value* Value::LinkToVariable(VariableId id, Context* context) {
+    linked_to_variable_ = {static_cast<int>(id), context};
+    return this;
+}
+std::string Value::GetVariableName() {
+    if (IsLinkedToVariable())
+        return linked_to_variable_.context->GetVariableName(linked_to_variable_.id);
+    return "";
+}
+bool Value::IsLinkedToVariable() {
+    return linked_to_variable_.id!=-1;
+}
+
 Value *Value::SetTo(const Value* value) {               // Set internal value and type
     this->value = value->value;
     this->type = value->type;
@@ -62,6 +87,7 @@ TupleType& Value::GetTuple(Context* context) {
 
 Value::operator std::string() { 
     std::ostringstream os;
+
     switch (type) {
         case ValueTypes::Default: os << GetValue(); break;
         case ValueTypes::Address: os << std::string(GetAddress()); break;
@@ -88,6 +114,11 @@ std::string Value::str(Context* context) {
     return os.str(); 
 }
 
+void Value::Delete(Value *value) {
+    if (!value->IsLinkedToVariable())
+        delete value;
+}
+
 AddressType::AddressType(size_t position, Context *context){
     this->position=position;
     this->context=context;
@@ -99,7 +130,7 @@ Context *AddressType::getContext(Context *fallback) {
         this->context->Result()->Jump(this->position); // Этот Jump будет при вызове Return контекста. Тут только для наглядности
         return this->context;
     }
-    return new Context(fallback, this->position);
+    return new Context(fallback, this->position);       // How to delete this? 
 }
 
 void AddressType::SetContext(Context *context) {

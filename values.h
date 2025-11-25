@@ -2,6 +2,7 @@
 #include <string>
 #include <sstream>
 #include <list>
+#include "variables_table.h"
 
 class Context;
 
@@ -37,14 +38,23 @@ namespace Values {
     };
 
     class Value {
+        struct {
+            int id = -1;
+            Context *context = NULL;
+        } linked_to_variable_;
         public:
-        void *value;
+        void *value = NULL;
         ValueTypes type;
         Value(DefaultValueType value);
         Value(AddressType value);
         Value(TupleType value);
         Value();
         Value(Value* value);        // Clone
+        ~Value();
+
+        Value* LinkToVariable(VariableId id, Context* context);
+        std::string GetVariableName();
+        bool IsLinkedToVariable();
 
         Value* SetTo(const Value *value);  // Set internal value and type
 
@@ -54,5 +64,7 @@ namespace Values {
 
         operator std::string();
         std::string str(Context* context=NULL);
+
+        static void Delete(Value *value);
     };
 }

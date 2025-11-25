@@ -38,7 +38,9 @@ class SyntaxAnalys {
         verbose_ = verbose;
         arguments_id = names_lookup.insert("arguments");
     };
-
+    std::string GetVariableName(VariableId id) {
+        return names_lookup.get(id);
+    }
     std::string StackToStr(Symbol *S=NULL);
     bool Analyse();
     

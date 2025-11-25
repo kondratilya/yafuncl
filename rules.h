@@ -12,7 +12,7 @@ enum class Actions {
     None=0, Name, 
     ModifyerInner, ModifyerOuter,
     Equate, 
-    Print, PrintLn, PrintChar,
+    Print, PrintLn, PrintChar, PrintMyName,
     BeginFunction, EndFunction, 
     Return, ReturnEmpty, ReturnIf, ReturnEmptyIf, ReturnUnconditional,
     Plus, Minus, Multiply, Divide, Mod,
@@ -108,6 +108,7 @@ class Rules {
         {NT::T8, {"@"s, NT::T8}, Actions::Print},
         {NT::T8, {"@@"s, NT::T8}, Actions::PrintLn},
         {NT::T8, {"@@@"s, NT::T8}, Actions::PrintChar},
+        {NT::T8, {"@?"s, NT::T8}, Actions::PrintMyName},
         {NT::T8, {NT::T9}},
 
         {NT::FunctionCall, {"=>"s, NT::Block}, Actions::FunctionCall},

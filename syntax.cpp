@@ -19,8 +19,7 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
         case Actions::Name:
             code.push_back(new VariableInstruction(
                     this->names_lookup.insert(names_stack.top()), 
-                    modifyers_, 
-                    &this->names_lookup));
+                    modifyers_));
             names_stack.pop();
             modifyers_.clear();
         break;
@@ -170,6 +169,9 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
         break;
         case Actions::PrintChar: 
             code.push_back(new OperatorInstruction(Operators::PrintChar));
+        break;
+        case Actions::PrintMyName: 
+            code.push_back(new OperatorInstruction(Operators::PrintMyName));
         break;
         case Actions::BeginFunction: 
             function_definitions.push(code.size());

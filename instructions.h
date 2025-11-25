@@ -20,7 +20,7 @@ enum class Operators {
     Or, And, IsEqual, IsNotEqual, IsLess, IsMore, IsLessOrEqual, IsMoreOrEqual,
     Equate, Return, Jump, Jz, Jnz, Call, CallArg, Pop, 
     Unpack, Index, ToTuple, Length, Clone,
-    Print, PrintLf, PrintChar,
+    Print, PrintLf, PrintChar, PrintMyName,
     InnerAccess,
 };
 
@@ -78,6 +78,7 @@ class OperatorInstruction: public Instruction {
             {Operators::Pop, "Pop"}, 
             {Operators::Print, "Print"},
             {Operators::PrintLf, "\\n"},
+            {Operators::PrintMyName, "Me!"},
         };   
         return str_operators[static_cast<Operators>(op)]; 
     }
@@ -87,10 +88,10 @@ class OperatorInstruction: public Instruction {
 
 class VariableInstruction: public Instruction {
     VariableId index;
-    VariablesLookup *names_lookup_table;
     AccessType access_type_;
+    bool is_const = true;
     public:
-    VariableInstruction(VariableId index, Modifyers modifyers={}, VariablesLookup *names_lookup_table=NULL): Instruction() {
+    VariableInstruction(VariableId index, Modifyers modifyers={}): Instruction() {
         this->index = index;
         access_type_ = AccessType::Default;
         if (modifyers.count(Modifyer::Inner) && modifyers.count(Modifyer::Outer)) {
@@ -101,7 +102,6 @@ class VariableInstruction: public Instruction {
         } else if (modifyers.count(Modifyer::Outer)) {
             access_type_ = AccessType::Outer;
         }
-        this->names_lookup_table = names_lookup_table;
     }
     operator std::string() const override { 
         std::ostringstream s; s << "[" << index << "]"; return s.str();
