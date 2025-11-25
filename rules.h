@@ -9,8 +9,10 @@ using namespace std::string_literals;
 using NT = NonTerminals;
 
 enum class Actions {
-    None=0, Name, Equate, 
-    Print, PrintLn, PrintChar, PrintLnEmpty,
+    None=0, Name, 
+    ModifyerInner, ModifyerOuter,
+    Equate, 
+    Print, PrintLn, PrintChar,
     BeginFunction, EndFunction, 
     Return, ReturnEmpty, ReturnIf, ReturnEmptyIf, ReturnUnconditional,
     Plus, Minus, Multiply, Divide, Mod,
@@ -22,6 +24,7 @@ enum class Actions {
     FunctionCall, FunctionCallArg,
     If, Then, ThenEnd, Else,
     While, WhileDo, WhileEnd,
+
 };
 
 
@@ -43,7 +46,6 @@ class Rules {
         {NT::Expressions, {NT::Expression}},
 
         {NT::Expression, {NT::E}, Actions::Pop},
-        {NT::Expression, {"$$$nextline$$$"s}, Actions::PrintLnEmpty},
         {NT::Expression, {NT::Return}, Actions::ReturnUnconditional},
         {NT::Expression, {NT::Return, "if"s, NT::E}, Actions::ReturnIf},
         {NT::Expression, {NT::ReturnEmpty}, Actions::ReturnUnconditional},
@@ -138,8 +140,7 @@ class Rules {
         {NT::Tuple, {"("s, NT::T1, ","s, ")"s}, Actions::TupleOne},
         {NT::Tuple, {"("s, ")"s}, Actions::TupleEmpty},
 
-        {NT::LVALUE, {NT::T9, "["s, NT::E, "]"s}, Actions::Index},  //???
-//        {NT::LVALUE, {NT::NT::LVALUE, "["s, NT::E, "]"s}, Actions::Index},  //???
+        {NT::LVALUE, {NT::T9, "["s, NT::E, "]"s}, Actions::Index}, 
         {NT::LVALUE, {NT::NAME}},
 
         {NT::NAME, {Symbol(Tokens::ID)}, Actions::Name},
@@ -148,8 +149,8 @@ class Rules {
         {NT::Modifyers, {NT::Modifyer, NT::Modifyers}},
         {NT::Modifyers, {NT::Modifyer}},
 
-        {NT::Modifyer, {"local"s}},
-        {NT::Modifyer, {"global"s}},
+        {NT::Modifyer, {"inner"s}, Actions::ModifyerInner},
+        {NT::Modifyer, {"outer"s}, Actions::ModifyerOuter}, 
     };
 
     public:

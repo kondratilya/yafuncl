@@ -16,11 +16,20 @@ using namespace Symbols;
 
 void SyntaxAnalys::RunAction(size_t rule_id) {
     switch (rules[rule_id].action) {
-        case Actions::Name: {
-            std::string name = names_stack.top();
+        case Actions::Name:
+            code.push_back(new VariableInstruction(
+                    this->names_lookup.insert(names_stack.top()), 
+                    modifyers_, 
+                    &this->names_lookup));
             names_stack.pop();
-            code.push_back(new VariableInstruction(this->names_lookup.insert(name), &this->names_lookup));
-        } break;
+            modifyers_.clear();
+        break;
+        case Actions::ModifyerInner: 
+            modifyers_.insert(Modifyer::Inner);
+        break;
+        case Actions::ModifyerOuter: 
+            modifyers_.insert(Modifyer::Outer);
+        break;
         case Actions::TupleEmpty: 
             code.push_back(new TupleInstruction(0));
         break;
@@ -159,9 +168,6 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
             code.push_back(new OperatorInstruction(Operators::Print));
             code.push_back(new OperatorInstruction(Operators::PrintLf));
         break;
-        case Actions::PrintLnEmpty: 
-            code.push_back(new OperatorInstruction(Operators::PrintLf));
-        break;
         case Actions::PrintChar: 
             code.push_back(new OperatorInstruction(Operators::PrintChar));
         break;
@@ -169,6 +175,11 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
             function_definitions.push(code.size());
             code.push_back(new Instruction());
             code.push_back(new OperatorInstruction(Operators::Jump));
+            if (modifyers_.count(Modifyer::Outer)) 
+                throw std::runtime_error("Syntax: Outer modifyer for function");
+            if (modifyers_.count(Modifyer::Inner)) 
+                code.push_back(new OperatorInstruction(Operators::InnerAccess));
+            modifyers_.clear();
         break;
         case Actions::EndFunction: { 
             size_t function_start = function_definitions.top();
@@ -266,7 +277,11 @@ bool SyntaxAnalys::FindBeginning(Symbol *S, size_t &rule) {
 
 bool SyntaxAnalys::FindReduction(size_t &rule, size_t &head) {
     bool found = true;
-    for (size_t h=0; h<heads.size(); ++h) {
+    size_t max_depth=2;
+    int start_head = heads.size()-(max_depth+1);
+    if (start_head < 0) start_head=0;
+    
+    for (size_t h=start_head; h<heads.size(); ++h) {
         for (size_t r=0; r<rules.size(); ++r){
             bool found = true;
             if (rules[r].right.size() != stack.size()-heads[h])
@@ -298,7 +313,7 @@ bool SyntaxAnalys::TestRules(Symbol *S) {
         if (verbose_) std::cout << " [" << std::setw(2) << rule << "] ";
 
         if (rules[rule].left==NT::ROOT && stack.size() != rules[rule].right.size()) {
-            throw std::runtime_error("Syntax: Early end");
+            throw std::runtime_error("Syntax: Early end\n"s + StackToStr(S));
         }
         for (size_t i=0; i<rules[rule].right.size(); ++i) {
             delete stack.back();
@@ -314,11 +329,23 @@ bool SyntaxAnalys::TestRules(Symbol *S) {
 
     heads.push_back(stack.size());
     if (*S==Symbol(Tokens::END)) {
-        throw std::runtime_error("Syntax: Error");
+        throw std::runtime_error("Syntax: Error\n"s + StackToStr(S));
     }
     if (verbose_) std::cout << std::setw(2) << " [  ] ";
     return(true);
 
+}
+
+std::string SyntaxAnalys::StackToStr(Symbol *S) {
+    std::ostringstream os;
+    for (auto i = 0; i<stack.size(); ++i) {
+        for (auto head : heads) {
+            if(head==i)os << ".";
+        }
+        os << *stack[i] << " ";
+    }
+    if (S) os << "  <-- " << *S;
+    return os.str();
 }
 
 bool SyntaxAnalys::Analyse() {
@@ -338,13 +365,6 @@ bool SyntaxAnalys::Analyse() {
                     this->lexic->UnGet("$$$returnempty$$$");
                     continue;
                 }
-            } else if (*R=="@@") {
-                Token *R_next = this->lexic->ShowNext();
-                if (*R_next==";") {
-                    delete R;
-                    this->lexic->UnGet("$$$nextline$$$");
-                    continue;
-                }
             }
             S = new Symbol(R);
             if (S->IsName()) {
@@ -357,18 +377,11 @@ bool SyntaxAnalys::Analyse() {
             stack.push_back(S);
 
         if (verbose_) {
-            for (auto i = 0; i<stack.size(); ++i) {
-                for (auto head : heads) {
-                    if(head==i)std::cout << ".";
-                }
-                std::cout << *stack[i] << " ";
-            }
-            std::cout << "  <-- " << *S << std::endl;
+            std::cout << StackToStr(S) << std::endl;
         }
 
         if(stack.size()==1 && *stack[0] == Symbol(NT::ROOT)) {       
             return true;
-
         } 
     }
     return false;

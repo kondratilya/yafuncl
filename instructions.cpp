@@ -9,6 +9,9 @@
 
 ReturnCode OperatorInstruction::Run(Context *context) {
     switch (op) {
+        case Operators::InnerAccess:
+            context->SetInnerAccess();
+        break;
         case Operators::Jump:
             context->Jump(context->Pop()->GetAddress());
             return ReturnCode::Continue;
@@ -142,7 +145,7 @@ ReturnCode OperatorInstruction::Run(Context *context) {
 }
 
 ReturnCode VariableInstruction::Run(Context *context) {
-   context->Push(context->GetVariable(index));
+    context->Push(context->GetVariable(index, access_type_));
     return ReturnCode::None;
 }
 

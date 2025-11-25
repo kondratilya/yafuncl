@@ -5,6 +5,8 @@
 #include <string>
 #include <sstream>
 #include "code.h"
+#include "modifyers.h"
+#include "access_types.h"
 #include "values.h"
 #include "variables_table.h"
 #include "context.h"
@@ -19,6 +21,7 @@ enum class Operators {
     Equate, Return, Jump, Jz, Jnz, Call, CallArg, Pop, 
     Unpack, Index, ToTuple, Length, Clone,
     Print, PrintLf, PrintChar,
+    InnerAccess,
 };
 
 enum class ReturnCode {
@@ -71,6 +74,7 @@ class OperatorInstruction: public Instruction {
             {Operators::Jnz, "Jnz"}, 
             {Operators::Call, "Call"}, 
             {Operators::CallArg, "CallArg"}, 
+            {Operators::InnerAccess, "InnerAccess"}, 
             {Operators::Pop, "Pop"}, 
             {Operators::Print, "Print"},
             {Operators::PrintLf, "\\n"},
@@ -84,9 +88,19 @@ class OperatorInstruction: public Instruction {
 class VariableInstruction: public Instruction {
     VariableId index;
     VariablesLookup *names_lookup_table;
+    AccessType access_type_;
     public:
-    VariableInstruction(VariableId index, VariablesLookup *names_lookup_table=NULL): Instruction() {
+    VariableInstruction(VariableId index, Modifyers modifyers={}, VariablesLookup *names_lookup_table=NULL): Instruction() {
         this->index = index;
+        access_type_ = AccessType::Default;
+        if (modifyers.count(Modifyer::Inner) && modifyers.count(Modifyer::Outer)) {
+            throw std::runtime_error("Exec: Conflicting modifyers");
+        }
+        if (modifyers.count(Modifyer::Inner)) {
+            access_type_ = AccessType::Inner;
+        } else if (modifyers.count(Modifyer::Outer)) {
+            access_type_ = AccessType::Outer;
+        }
         this->names_lookup_table = names_lookup_table;
     }
     operator std::string() const override { 

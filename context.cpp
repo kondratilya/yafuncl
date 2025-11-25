@@ -3,16 +3,19 @@
 #include <stdexcept>
 #include "context.h"
 
-Values::Value *Context::SearchVariable(VariableId id) {
-    auto search = lookup.find(id);
-    if (search != lookup.end()) {
-        return search->second;
-    } 
-    if (this->parent) {
-        return this->parent->SearchVariable(id);
-    } else {
-        return NULL;
+Values::Value *Context::SearchVariable(VariableId id, AccessType access_type) {
+    if (access_type != AccessType::Outer) {
+        auto search = lookup.find(id);
+        if (search != lookup.end()) {
+            return search->second;
+        } 
     }
+    if (access_type == AccessType::Inner) 
+        return NULL;
+    if (this->parent) {
+        return this->parent->SearchVariable(id, AccessType::Default);
+    }
+    return NULL;
 }
 
 Values::Value *Context::CreateVariable(VariableId id) {
@@ -21,9 +24,15 @@ Values::Value *Context::CreateVariable(VariableId id) {
     return val;
 }
 
-Values::Value *Context::GetVariable(VariableId id) {
-    Values::Value* val = this->SearchVariable(id);
+Values::Value *Context::GetVariable(VariableId id, AccessType access_type) {
+    if (access_type == AccessType::Default)
+        access_type = access_type_;
+    if (!parent) 
+        access_type = AccessType::Default;
+    Values::Value* val = this->SearchVariable(id, access_type);
     if (val) return val;
+    if (access_type == AccessType::Outer) 
+        throw std::runtime_error("Exec: Trying to access abscent Outer variable");
     return CreateVariable(id);
 }
 
@@ -69,6 +78,11 @@ Context* Context::Jump(size_t position) {
 
 Context* Context::Jump(const Values::AddressType &address) {
     pointer = address.position;
+    return this;
+}
+
+Context* Context::SetInnerAccess() {
+    access_type_ = AccessType::Inner;
     return this;
 }
 

@@ -12,7 +12,7 @@ int main(int argc, char*argv[]) {
     } else {
         source.open("test.txt"); 
     }
-
+    
     LexicAnalys lexic(source);
     SyntaxAnalys syntax(lexic);
     Execute exec(syntax);

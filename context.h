@@ -5,7 +5,7 @@
 #include <set>
 #include <string>
 #include <stdexcept>
-
+#include "access_types.h"
 #include "values.h"
 
 class SyntaxAnalys;
@@ -14,7 +14,6 @@ typedef size_t VariableId;
 #include "instructions.h"
 #include "syntax.h"
 
-
 class Context {
     SyntaxAnalys *syntax;
     Context *parent = NULL;
@@ -22,14 +21,14 @@ class Context {
     std::stack<Values::Value*> stack;
     size_t pointer = 0;
     Values::Value *result;
-
+    AccessType access_type_ = AccessType::Default;
     public:
 
     Context *Parent() { return parent; }
 
-    Values::Value *SearchVariable(VariableId id);
+    Values::Value *SearchVariable(VariableId id, AccessType access_type=AccessType::Default);
     Values::Value *CreateVariable(VariableId id);
-    Values::Value *GetVariable(VariableId id);
+    Values::Value *GetVariable(VariableId id, AccessType access_type=AccessType::Default);
     Context *WithArgument(Values::Value* arg=NULL);
 
     Context(Context *parent, size_t position=0);
@@ -42,6 +41,8 @@ class Context {
     Context* Jump(const Values::AddressType &address);
 
     Context* Result(Values::Value *result=NULL);
+
+    Context* SetInnerAccess();
     
     Context(SyntaxAnalys &syntax, size_t position=0);
 
