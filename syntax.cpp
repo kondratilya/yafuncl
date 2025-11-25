@@ -140,11 +140,26 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
         case Actions::Unpack:
             code.push_back(new OperatorInstruction(Operators::Unpack));
         break;
+        case Actions::CloneTuple:
+            code.push_back(new OperatorInstruction(Operators::Clone));
+        break;
+        case Actions::Index:
+            code.push_back(new OperatorInstruction(Operators::Index));
+        break;
+        case Actions::ToTuple:
+            code.push_back(new OperatorInstruction(Operators::ToTuple));
+        break;
+        case Actions::Length:
+            code.push_back(new OperatorInstruction(Operators::Length));
+        break;
         case Actions::Print: 
             code.push_back(new OperatorInstruction(Operators::Print));
         break;
         case Actions::PrintLn: 
             code.push_back(new OperatorInstruction(Operators::Print));
+            code.push_back(new OperatorInstruction(Operators::PrintLf));
+        break;
+        case Actions::PrintLnEmpty: 
             code.push_back(new OperatorInstruction(Operators::PrintLf));
         break;
         case Actions::PrintChar: 
@@ -317,11 +332,17 @@ bool SyntaxAnalys::Analyse() {
         if(to_read) {
             R = this->lexic->Get();
             if (*R=="return") {
-                Token *R_next = this->lexic->Get();
-                this->lexic->UnGet(R_next);
+                Token *R_next = this->lexic->ShowNext();
                 if (*R_next==";" || *R_next=="if") {
                     delete R;
                     this->lexic->UnGet("$$$returnempty$$$");
+                    continue;
+                }
+            } else if (*R=="@@") {
+                Token *R_next = this->lexic->ShowNext();
+                if (*R_next==";") {
+                    delete R;
+                    this->lexic->UnGet("$$$nextline$$$");
                     continue;
                 }
             }

@@ -84,3 +84,9 @@ void LexicAnalys::UnGet(std::string id) {
 void LexicAnalys::UnGet(Token*token) {
     this->ungets_.push(token);
 }
+
+Token *LexicAnalys::ShowNext() {
+    Token *R_next = Get();
+    UnGet(R_next);
+    return R_next;
+}

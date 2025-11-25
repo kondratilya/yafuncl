@@ -69,6 +69,7 @@ Value::operator std::string() {
         case ValueTypes::Undefined: os << "?"; break;
         default: os << "???"; break;
     }
+    // os << ":" << value;
     return os.str(); 
 }
 

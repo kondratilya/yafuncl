@@ -47,9 +47,12 @@ ReturnCode OperatorInstruction::Run(Context *context) {
             Values::Value *variable = context->Top();
             variable->SetTo(value);
         } break;
-         case Operators::Unpack: {
-            Values::TupleType value = Values::TupleType::Clone(context->Pop()->GetTuple());
-            Values::TupleType dest = context->Top()->GetTuple();
+        case Operators::Clone: 
+            context->Push(new Values::Value(Values::TupleType::Clone(context->Pop()->GetTuple(context))));
+        break;
+        case Operators::Unpack: {
+            Values::TupleType value = context->Pop()->GetTuple(context);
+            Values::TupleType dest = context->Top()->GetTuple(context);
             auto value_it = value.begin();
             auto dest_it = dest.begin();
             while (dest_it!=dest.end()) {
@@ -63,6 +66,23 @@ ReturnCode OperatorInstruction::Run(Context *context) {
                 std::advance(dest_it, 1);
             }
         } break;
+        case Operators::Index: {
+            Values::DefaultValueType index = context->Pop()->GetValue(context);
+            Values::TupleType tuple = context->Pop()->GetTuple(context);
+            if (index < 0) index = tuple.size() + index;
+            if (index < 0 || index > tuple.size()) {
+                throw std::runtime_error("Exec: Index out of range"); 
+            }
+            Values::TupleType::iterator it = tuple.begin();
+            std::advance(it, index);
+            context->Push(*it);
+        } break;
+        case Operators::Length: 
+            context->Push(new Values::Value(context->Pop()->GetTuple(context).size()));
+        break;
+        case Operators::ToTuple: 
+            context->Push(new Values::Value(context->Pop()->GetTuple(context)));
+        break;
         case Operators::Print: 
             std::cout << "\"" << std::string(*context->Top()) << "\" ";
         break;

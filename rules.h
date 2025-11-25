@@ -10,14 +10,15 @@ using NT = NonTerminals;
 
 enum class Actions {
     None=0, Name, Equate, 
-    Print, PrintLn, PrintChar,
+    Print, PrintLn, PrintChar, PrintLnEmpty,
     BeginFunction, EndFunction, 
     Return, ReturnEmpty, ReturnIf, ReturnEmptyIf, ReturnUnconditional,
     Plus, Minus, Multiply, Divide, Mod,
     Negative, Positive, Dec, Inc, Not,
     Or, And, IsEqual, IsNotEqual, IsLess, IsMore, IsLessOrEqual, IsMoreOrEqual, 
     Pop,
-    Tuple, TupleEmpty, TupleOne, TupleEnd, Unpack,
+    Tuple, TupleEmpty, TupleOne, TupleEnd, Unpack, CloneTuple,
+    Index, ToTuple, Length,
     FunctionCall, FunctionCallArg,
     If, Then, ThenEnd, Else,
     While, WhileDo, WhileEnd,
@@ -42,6 +43,7 @@ class Rules {
         {NT::Expressions, {NT::Expression}},
 
         {NT::Expression, {NT::E}, Actions::Pop},
+        {NT::Expression, {"$$$nextline$$$"s}, Actions::PrintLnEmpty},
         {NT::Expression, {NT::Return}, Actions::ReturnUnconditional},
         {NT::Expression, {NT::Return, "if"s, NT::E}, Actions::ReturnIf},
         {NT::Expression, {NT::ReturnEmpty}, Actions::ReturnUnconditional},
@@ -100,6 +102,7 @@ class Rules {
         {NT::T8, {"++"s, NT::T8}, Actions::Inc},
         {NT::T8, {"!"s, NT::T8}, Actions::Not},
         {NT::T8, {"not"s, NT::T8}, Actions::Not},
+        {NT::T8, {"..."s, NT::T8}, Actions::ToTuple},
         {NT::T8, {"@"s, NT::T8}, Actions::Print},
         {NT::T8, {"@@"s, NT::T8}, Actions::PrintLn},
         {NT::T8, {"@@@"s, NT::T8}, Actions::PrintChar},
@@ -109,11 +112,12 @@ class Rules {
         {NT::FunctionCall, {"=>"s, NT::NAME}, Actions::FunctionCall},
         {NT::FunctionCall, {NT::T9, "=>"s, NT::Block}, Actions::FunctionCallArg},
         {NT::FunctionCall, {NT::T9, "=>"s, NT::NAME}, Actions::FunctionCallArg},
-
+        {NT::FunctionCall, {NT::T9, "=>"s, "length"s}, Actions::Length},
+       
         {NT::T9, {NT::FunctionCall}},
         {NT::T9, {NT::LVALUE, "="s, NT::E}, Actions::Equate},
         {NT::T9, {NT::Tuple, "="s, NT::E}, Actions::Unpack},
-        {NT::T9, {NT::Tuple}},
+        {NT::T9, {NT::Tuple}, Actions::CloneTuple},         // Отвязать котреж от переменных
         {NT::T9, {"("s, NT::E, ")"s}},
         {NT::T9, {NT::Block}},
         {NT::T9, {NT::LVALUE}},
@@ -133,6 +137,9 @@ class Rules {
         {NT::Tuple, {"("s, NT::List, ")"s}, Actions::TupleEnd},
         {NT::Tuple, {"("s, NT::T1, ","s, ")"s}, Actions::TupleOne},
         {NT::Tuple, {"("s, ")"s}, Actions::TupleEmpty},
+
+        {NT::LVALUE, {NT::T9, "["s, NT::E, "]"s}, Actions::Index},  //???
+//        {NT::LVALUE, {NT::NT::LVALUE, "["s, NT::E, "]"s}, Actions::Index},  //???
         {NT::LVALUE, {NT::NAME}},
 
         {NT::NAME, {Symbol(Tokens::ID)}, Actions::Name},
