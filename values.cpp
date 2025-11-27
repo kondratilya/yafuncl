@@ -47,6 +47,10 @@ Value* Value::LinkToVariable(VariableId id, Context* context) {
     linked_to_variable_ = {static_cast<int>(id), context};
     return this;
 }
+Value* Value::LinkToVariable(Value* source_link) {
+    linked_to_variable_ = source_link->linked_to_variable_;
+    return this;
+}
 std::string Value::GetVariableName() const {
     if (IsLinkedToVariable())
         return linked_to_variable_.context->GetVariableName(linked_to_variable_.id);
@@ -177,6 +181,8 @@ AddressType::operator std::string() const {
     return os.str();
 };
 
+TupleType::TupleType(std::initializer_list<Value*> init) : std::list<Value*>(init) {};
+
 TupleType::operator std::string() const { 
     std::ostringstream os; 
     os << "(";
@@ -191,6 +197,21 @@ std::string TupleType::str() const {
     return os.str();
 };
 
+TupleType &TupleType::operator+ (TupleType &other) {
+    other.splice(this->std::list<Value*>::end(), other);
+    return *this;
+}
+
+Value *TupleType::operator[] (int index) {
+    if (index < 0) index = this->size() + index;
+    if (index < 0 || index > this->size()) {
+        throw std::runtime_error("Exec: Index out of range"); 
+    }
+    Values::TupleType::iterator it = this->begin();
+    std::advance(it, index);
+    return *it;
+}
+ 
 TupleType TupleType::Clone(const TupleType &src) {
     TupleType dest;
     for (auto element: src) {

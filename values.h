@@ -24,13 +24,9 @@ namespace Values {
     class TupleType: public std::list<Value*> {
         public:
         TupleType() : std::list<Value*>() {}
-        TupleType(std::initializer_list<Value*> init) : std::list<Value*>(init) {};
-
-        TupleType &operator+ (TupleType &other) {
-            other.splice(this->std::list<Value*>::end(), other);
-            return *this;
-        }
-
+        TupleType(std::initializer_list<Value*> init);
+        TupleType &operator+ (TupleType &other);
+        Value *operator[] (int index); 
         operator std::string() const;
         std::string str() const;
         static TupleType Clone(const TupleType &src);
@@ -61,6 +57,7 @@ namespace Values {
         ~Value();
 
         Value* LinkToVariable(VariableId id, Context* context);
+        Value* LinkToVariable(Value* source_link);
         std::string GetVariableName() const;
         bool IsLinkedToVariable() const;
         bool IsMutable() const;

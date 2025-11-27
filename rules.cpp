@@ -12,6 +12,8 @@ const std::vector<Rule> Rules::rules = {
 
     {NT::Program, {NT::Expressions}},
     {NT::Expressions, {NT::Expression, ";"s, NT::Expressions}},
+    {NT::Expressions, {NT::Expression, ";"s, NT::Expressions}},
+    {NT::Expressions, {";"s, NT::Expressions}},
     {NT::Expressions, {NT::Expression}},
 
     {NT::Expression, {NT::E}, Actions::Pop},
@@ -110,7 +112,7 @@ const std::vector<Rule> Rules::rules = {
     {NT::Tuple, {"("s, NT::T1, ","s, ")"s}, Actions::TupleOne},
     {NT::Tuple, {"("s, ")"s}, Actions::TupleEmpty},
 
-    {NT::LVALUE, {NT::T9, "["s, NT::E, "]"s}, Actions::Index}, 
+    {NT::LVALUE, {NT::LVALUE, "["s, NT::E, "]"s}, Actions::Index}, 
     {NT::LVALUE, {NT::NAME}},
 
     {NT::NAME, {Symbol(Tokens::ID)}, Actions::Name},

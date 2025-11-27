@@ -74,14 +74,9 @@ ReturnCode OperatorInstruction::Run(Context *context) {
         } break;
         case Operators::Index: {
             Values::DefaultValueType index = context->Pop()->GetValue();
-            Values::TupleType tuple = context->Pop()->GetTuple();
-            if (index < 0) index = tuple.size() + index;
-            if (index < 0 || index > tuple.size()) {
-                throw std::runtime_error("Exec: Index out of range"); 
-            }
-            Values::TupleType::iterator it = tuple.begin();
-            std::advance(it, index);
-            context->Push(*it);
+            Values::Value* tuple_value = context->Pop();
+            Values::TupleType tuple = tuple_value->GetTuple();
+            context->Push(tuple[index]->LinkToVariable(tuple_value));
         } break;
         case Operators::Length: 
             context->Push(new Values::Value(context->Pop()->GetTuple().size()));
