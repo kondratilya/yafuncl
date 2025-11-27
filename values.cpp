@@ -77,14 +77,14 @@ AddressType& Value::GetAddress() const {
     return *(AddressType*)value;
 }
 
-Value *Value::Calculate(Context* context) {
+Value *Value::Calculate() {
     if (type==ValueTypes::Address)
-        return GetAddress().getContext(context)->Run()->Calculate(context);
+        return GetAddress().Run()->Calculate();
     return this;
 }
 
-DefaultValueType& Value::GetValue(Context* context) {
-    Value *v = Calculate(context);
+DefaultValueType& Value::GetValue() {
+    Value *v = Calculate();
     switch (v->type) {
         case ValueTypes::Undefined:
             throw std::runtime_error("Exec: Operation with Undefined value"); 
@@ -97,7 +97,7 @@ DefaultValueType& Value::GetValue(Context* context) {
     }
 }
 
-TupleType& Value::GetTuple(Context* context) {
+TupleType& Value::GetTuple() {
     switch (type) {
         case ValueTypes::Undefined:
             return *(new TupleType());                /// !!! - how to delete??? !!!!
@@ -109,8 +109,8 @@ TupleType& Value::GetTuple(Context* context) {
     }
 }
 
-bool Value::GetBool(Context* context) {
-    Value *v = Calculate(context);
+bool Value::GetBool() {
+    Value *v = Calculate();
     switch (v->type) {
         case ValueTypes::Default:
             return v->GetValue();
@@ -134,14 +134,14 @@ Value::operator std::string() {
     return os.str(); 
 }
 
-std::string Value::str(Context* context) { 
+std::string Value::str() { 
     std::ostringstream os;
     switch (type) {
         case ValueTypes::Default: 
         case ValueTypes::Address: 
-            os << (char)(GetValue(context)); break;
+            os << (char)(GetValue()); break;
         case ValueTypes::Tuple: 
-            os << GetTuple(context).str(context);
+            os << GetTuple().str();
         break;
         case ValueTypes::Undefined: os << " "; break;
         default: os << "?"; break;
@@ -156,20 +156,15 @@ void Value::Delete(Value *value) {
 
 AddressType::AddressType(size_t position, Context *context){
     this->position=position;
-    this->context=context;
+    this->context_=context;
 }
 
-Context *AddressType::getContext(Context *fallback) {
-    // Если у адреса есть контекст, значит из него уже вышли через Return, можно делать Jump
-    if (this->context) {
-        this->context->Result()->Clear()->Jump(this->position); // Этот Jump будет при вызове Return контекста. Тут только для наглядности
-        return this->context;
-    }
-    return new Context(fallback, this->position);       // How to delete this? 
+Value *AddressType::Run() {
+    return (new Context(context_, this->position))->Run();
 }
 
-void AddressType::SetContext(Context *context) {
-    this->context = context;
+Value *AddressType::Run(Values::Value *arguments) {
+    return (new Context(context_, this->position, arguments))->Run();
 }
 
 AddressType::operator std::string() const { 
@@ -190,9 +185,9 @@ TupleType::operator std::string() const {
     return os.str();
 };
 
-std::string TupleType::str(Context *context) const { 
+std::string TupleType::str() const { 
     std::ostringstream os; 
-    for (auto el: *this) os << el->str(context); 
+    for (auto el: *this) os << el->str(); 
     return os.str();
 };
 

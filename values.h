@@ -12,12 +12,12 @@ namespace Values {
     typedef double DefaultValueType;
 
     class AddressType {
-        Context *context=NULL;
         public:
-        AddressType(size_t position, Context *context=NULL);
+        Context *context_ = NULL;
+        AddressType(size_t position, Context *context);
         size_t position;
-        Context *getContext(Context *fallback=NULL);
-        void SetContext(Context *context);
+        Value *Run();
+        Value *Run(Values::Value *arguments);
         operator std::string() const;
     };
 
@@ -32,7 +32,7 @@ namespace Values {
         }
 
         operator std::string() const;
-        std::string str(Context *context=NULL) const;
+        std::string str() const;
         static TupleType Clone(const TupleType &src);
     };
     
@@ -49,11 +49,10 @@ namespace Values {
             Context *context = NULL;
         } linked_to_variable_;
         void *value = NULL;
-        
 
         public:
         ValueTypes type;
-        
+       
         Value(DefaultValueType value);
         Value(AddressType value);
         Value(TupleType value);
@@ -68,14 +67,14 @@ namespace Values {
 
         Value* SetTo(const Value *value);  // Set internal value and type
 
-        Value *Calculate(Context* context);
-        DefaultValueType& GetValue(Context* context=NULL);
+        Value *Calculate();
+        DefaultValueType& GetValue();
         AddressType& GetAddress() const;
-        TupleType& GetTuple(Context* context=NULL);
-        bool GetBool(Context* context=NULL);
+        TupleType& GetTuple();
+        bool GetBool();
 
         operator std::string();
-        std::string str(Context* context=NULL);
+        std::string str();
 
         static void Delete(Value *value);
     };

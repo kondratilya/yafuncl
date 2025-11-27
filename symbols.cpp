@@ -3,7 +3,8 @@
 #include "symbols.h"
 
 using namespace Symbols;
-std::map<NonTerminals, std::string> str_non_terminals = {
+
+std::map<NonTerminals, std::string> Symbol::str_non_terminals = {
     {NonTerminals::ROOT, "ROOT"}, {NonTerminals::E, "E"}, 
     {NonTerminals::T0, "T0"}, {NonTerminals::T1, "T1"}, {NonTerminals::T2, "T2"}, 
     {NonTerminals::T3, "T3"}, {NonTerminals::T4, "T4"}, {NonTerminals::T5, "T5"},
@@ -36,6 +37,6 @@ std::ostream &operator<<(std::ostream &os, Symbol &s) {
         else
             return os << s.name;
     } else  {
-        return os << "<" << str_non_terminals[s.non_terminal] << ">";
+        return os << "<" << Symbol::str_non_terminals[s.non_terminal] << ">";
     }
 }

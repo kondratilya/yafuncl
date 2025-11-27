@@ -30,7 +30,7 @@ class Context {
     bool vars_default_mutable_ = false;
     public:
 
-    Context *Parent() { return parent; }
+    Context(SyntaxAnalys &syntax, size_t position=0);
 
     ~Context() {
         // Контекст должен удалить значения из своей таблицы, но пока контексты не удаляю
@@ -41,27 +41,21 @@ class Context {
     Values::Value *GetVariable(VariableId id, AccessType access_type=AccessType::Default, MutabilityType mutability_type=MutabilityType::Default);
     bool IsVariableMutable(VariableId id);
     std::string GetVariableName(VariableId id);
-    
-    Context *WithArgument(Values::Value* arg=NULL);
 
     Context(Context *parent, size_t position=0);
+    Context(Context *parent, size_t position, Values::Value* arguments);
     
     Values::Value* Pop();
     void PopDelete();
     Values::Value* Top();
     void Push(Values::Value *v);
 
-    Context* Jump(size_t position);
     Context* Jump(const Values::AddressType &address);
-    
-    Context* Clear();
 
     Context* Result(Values::Value *result=NULL);
 
     Context* SetInnerAccess();
     Context* SetMutableVars();
-    
-    Context(SyntaxAnalys &syntax, size_t position=0);
 
     Values::Value *Run();
 };

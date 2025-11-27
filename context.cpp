@@ -54,24 +54,26 @@ std::string Context::GetVariableName(VariableId id) {
 }
 
 Context::Context(Context *parent, size_t position): Context(*(parent->syntax), position) {
-     this->parent = parent;
+    this->parent = parent;
+}
+
+Context::Context(Context *parent, size_t position, Values::Value* arguments): Context(*(parent->syntax), position) {
+    this->parent = parent;
+    CreateVariable(syntax->arguments_id, false)->SetTo(arguments);
 }
 
 Context::Context(SyntaxAnalys &syntax, size_t position) {
     this->parent = NULL;
     this->syntax = &syntax;
-    Jump(position);
+    this->pointer = position;
     Result();
 }
 
-Context *Context::WithArgument(Values::Value* arg) {
-    CreateVariable(syntax->arguments_id, false)->SetTo(arg);
-    return this;
-}
-
 Values::Value *Context::Pop() {
-    if (!stack.size()) 
+    if (!stack.size()) {
+        // std::cout << "POP EMPTY!";
         return new Values::Value();
+    }
     Values::Value *v = stack.top();
     stack.pop();
     return v;
@@ -85,8 +87,10 @@ void Context::PopDelete() {
 }
 
 Values::Value *Context::Top() {
-    if (!stack.size()) 
+    if (!stack.size()) {
+        // std::cout << "TOP EMPTY!";
         return new Values::Value();
+    }
     return stack.top();
 }
 
@@ -95,18 +99,8 @@ void Context::Push(Values::Value *v) {
     stack.push(v);
 }
 
-Context* Context::Jump(size_t position) {
-    pointer = position;
-    return this;
-}
-
 Context* Context::Jump(const Values::AddressType &address) {
     pointer = address.position;
-    return this;
-}
-
-Context* Context::Clear() {
-    lookup.clear();
     return this;
 }
 
@@ -134,16 +128,13 @@ Values::Value *Context::Run() {
     while (pointer < syntax->code.size()) {
         auto instruction = syntax->code[pointer];
 
- std::cout << std::string(*instruction) << " ";
+//  std::cout << std::string(*instruction) << " ";
         ret = instruction->Run(this);
         if (ret == ReturnCode::Continue) {
             continue;
         }
         if (ret == ReturnCode::Return) {
             Values::Value *new_result = new Values::Value(result);
-            if (new_result->type == Values::ValueTypes::Address) {
-                new_result->GetAddress().SetContext(new Context(this, this->pointer));
-            }
             Result(NULL);
             return new_result;
         }

@@ -28,7 +28,7 @@ class LexicAnalys {
         NewLine,
         Eof,
     };
-    const std::vector<std::vector<States>> rules = {
+    static inline  std::vector<std::vector<States>> rules = {
         //Letter            Operator           Space             Comment             NewLine        Eof
         {States::Name     , States::Operator , States::Start   , States::Comment  , States::Start, States::End  }, // Start,
         {States::Error    , States::Error    , States::Error   , States::Error    , States::Error, States::Error}, // End,
@@ -37,7 +37,7 @@ class LexicAnalys {
         {States::Start    , States::Operator , States::Start   , States::Start    , States::Start, States::Start}, // Operator,
         {States::Comment  , States::Comment  , States::Comment , States::Comment  , States::Start, States::Start}, // Comment1,
     };
-    const std::map<Terminals, std::string> terminals = {
+    static inline std::map<Terminals, std::string> terminals = {
         {Terminals::Letter, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_"}, 
         {Terminals::Operator, "~`!@/$%^&*()[]{}-=+;:|\\.,\"'?<>"}, 
         {Terminals::Space, " \t\r"}, 
@@ -49,14 +49,11 @@ class LexicAnalys {
     Terminals terminal(int c);
 
     std::istream *stream;
-    // Token *double_token = NULL;
-    // Token *unget = NULL;
     std::stack<Token *> ungets_;
 
     public:
     LexicAnalys(std::istream &stream) { 
-        Rules r;
-        r.GetTerminalsList(keywords);
+        Rules().GetTerminalsList(keywords);
         this->stream = &stream;
     };
     Token *Get();

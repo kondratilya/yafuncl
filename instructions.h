@@ -36,52 +36,14 @@ class Instruction {
 };
 
 class OperatorInstruction: public Instruction {
+    static std::map<Operators, std::string> str_operators;
     Operators op;
     public:
     OperatorInstruction(Operators op): Instruction() {
         this->op = op;
     }
     operator std::string() const override { 
-        std::map<Operators, std::string> str_operators = {
-            {Operators::Pass, "Pass"}, 
-            {Operators::Add, "+"}, 
-            {Operators::Substract, "-"}, 
-            {Operators::Multiply, "*"}, 
-            {Operators::Divide, "/"},
-            {Operators::Mod, "%"},
-            {Operators::Negative, "Negative"}, 
-            {Operators::Positive, "Positive"}, 
-            {Operators::Dec, "Dec"}, 
-            {Operators::Inc, "Inc"}, 
-            {Operators::Not, "Not"}, 
-            {Operators::Or, "||"}, 
-            {Operators::And, "&&"}, 
-            {Operators::IsEqual, "=="}, 
-            {Operators::IsNotEqual, "!="}, 
-            {Operators::IsLess, "<"}, 
-            {Operators::IsMore, ">"}, 
-            {Operators::IsLessOrEqual, "<="}, 
-            {Operators::IsMoreOrEqual, ">="}, 
-            {Operators::Equate, "Equate"}, 
-            {Operators::Unpack, "Unpack"}, 
-            {Operators::Clone, "Clone"}, 
-            {Operators::Index, "Index"}, 
-            {Operators::ToTuple, "ToTuple"}, 
-            {Operators::Length, "Length"}, 
-            {Operators::Return, "Return"}, 
-            {Operators::Jump, "Jump"}, 
-            {Operators::Jz, "Jz"}, 
-            {Operators::Jnz, "Jnz"}, 
-            {Operators::Call, "Call"}, 
-            {Operators::CallArg, "CallArg"}, 
-            {Operators::UseInnerAccess, "Inner"}, 
-            {Operators::UseMutableVars, "Mutable"}, 
-            {Operators::Pop, "Pop"}, 
-            {Operators::Print, "Print"},
-            {Operators::PrintLf, "\\n"},
-            {Operators::PrintMyName, "Me!"},
-        };   
-        return str_operators[static_cast<Operators>(op)]; 
+        return str_operators[op]; 
     }
 
     ReturnCode Run(Context *context) override;

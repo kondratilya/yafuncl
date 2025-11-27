@@ -4,7 +4,7 @@
 #define STANDARD_BINARY_OPERATOR(_O_)  { \
                 Values::Value *value2 = context->Pop(); \
                 Values::Value *value1 = context->Pop(); \
-                context->Push(new Values::Value(value1->GetValue(context) _O_ value2->GetValue(context))); \
+                context->Push(new Values::Value(value1->GetValue() _O_ value2->GetValue())); \
             }
 
 ReturnCode OperatorInstruction::Run(Context *context) {
@@ -20,7 +20,7 @@ ReturnCode OperatorInstruction::Run(Context *context) {
             return ReturnCode::Continue;
         case Operators::Jz: {
             Values::AddressType address = context->Pop()->GetAddress();
-            Values::DefaultValueType condition = context->Pop()->GetBool(context);
+            Values::DefaultValueType condition = context->Pop()->GetBool();
             if (!condition) {
                 context->Jump(address);
                 return ReturnCode::Continue;
@@ -28,7 +28,7 @@ ReturnCode OperatorInstruction::Run(Context *context) {
         } break;
         case Operators::Jnz: {
             Values::AddressType address = context->Pop()->GetAddress();
-            Values::DefaultValueType condition = context->Pop()->GetBool(context);
+            Values::DefaultValueType condition = context->Pop()->GetBool();
             if (condition) {
                 context->Jump(address);
                 return ReturnCode::Continue;
@@ -36,12 +36,12 @@ ReturnCode OperatorInstruction::Run(Context *context) {
         } break;
         case Operators::Call: {
             Values::AddressType address = context->Pop()->GetAddress();
-            context->Push(address.getContext(context)->Run());
+            context->Push(address.Run());
         } break;
         case Operators::CallArg: {
             Values::AddressType address = context->Pop()->GetAddress();
             Values::Value *arguments = new Values::Value(context->Pop());
-            context->Push(address.getContext(context)->WithArgument(arguments)->Run());
+            context->Push(address.Run(arguments));
         } break;
         case Operators::Return:
             return ReturnCode::Return;
@@ -54,11 +54,11 @@ ReturnCode OperatorInstruction::Run(Context *context) {
             variable->SetTo(value);
         } break;
         case Operators::Clone: 
-            context->Push(new Values::Value(Values::TupleType::Clone(context->Pop()->GetTuple(context))));
+            context->Push(new Values::Value(Values::TupleType::Clone(context->Pop()->GetTuple())));
         break;
         case Operators::Unpack: {
-            Values::TupleType value = context->Pop()->GetTuple(context);
-            Values::TupleType dest = context->Top()->GetTuple(context);
+            Values::TupleType value = context->Pop()->GetTuple();
+            Values::TupleType dest = context->Top()->GetTuple();
             auto value_it = value.begin();
             auto dest_it = dest.begin();
             while (dest_it!=dest.end()) {
@@ -73,8 +73,8 @@ ReturnCode OperatorInstruction::Run(Context *context) {
             }
         } break;
         case Operators::Index: {
-            Values::DefaultValueType index = context->Pop()->GetValue(context);
-            Values::TupleType tuple = context->Pop()->GetTuple(context);
+            Values::DefaultValueType index = context->Pop()->GetValue();
+            Values::TupleType tuple = context->Pop()->GetTuple();
             if (index < 0) index = tuple.size() + index;
             if (index < 0 || index > tuple.size()) {
                 throw std::runtime_error("Exec: Index out of range"); 
@@ -84,16 +84,16 @@ ReturnCode OperatorInstruction::Run(Context *context) {
             context->Push(*it);
         } break;
         case Operators::Length: 
-            context->Push(new Values::Value(context->Pop()->GetTuple(context).size()));
+            context->Push(new Values::Value(context->Pop()->GetTuple().size()));
         break;
         case Operators::ToTuple: 
-            context->Push(new Values::Value(context->Pop()->GetTuple(context)));
+            context->Push(new Values::Value(context->Pop()->GetTuple()));
         break;
         case Operators::Print: 
             std::cout << "\"" << std::string(*context->Top()) << "\" ";
         break;
         case Operators::PrintChar: 
-            std::cout << context->Top()->str(context);
+            std::cout << context->Top()->str();
         break;
         case Operators::PrintMyName: 
             std::cout << context->Top()->GetVariableName() << " ";
@@ -102,30 +102,30 @@ ReturnCode OperatorInstruction::Run(Context *context) {
             std::cout << std::endl;
         break;
         case Operators::Add: {
-            Values::Value *value2 = context->Pop()->Calculate(context);
-            Values::Value *value1 = context->Pop()->Calculate(context);
+            Values::Value *value2 = context->Pop()->Calculate();
+            Values::Value *value1 = context->Pop()->Calculate();
             if (value1->type == Values::ValueTypes::Tuple || value2->type == Values::ValueTypes::Tuple) {
-                context->Push(new Values::Value(value1->GetTuple(context) + value2->GetTuple(context))); 
+                context->Push(new Values::Value(value1->GetTuple() + value2->GetTuple())); 
             } else {
-                context->Push(new Values::Value(value1->GetValue(context) + value2->GetValue(context)));
+                context->Push(new Values::Value(value1->GetValue() + value2->GetValue()));
             }
         } break;
         case Operators::Substract: STANDARD_BINARY_OPERATOR(-); break;
         case Operators::Multiply: STANDARD_BINARY_OPERATOR(*); break;
         case Operators::Divide: STANDARD_BINARY_OPERATOR(/); break;
         case Operators::Mod: {
-            Values::DefaultValueType value2 = context->Pop()->GetValue(context);
-            Values::DefaultValueType value1 = context->Pop()->GetValue(context);
+            Values::DefaultValueType value2 = context->Pop()->GetValue();
+            Values::DefaultValueType value1 = context->Pop()->GetValue();
             context->Push(new Values::Value(value1 - (int)(value1/value2) * value2)); 
         } break;
         case Operators::Or: {
             Values::Value *value2 = context->Pop();
             Values::Value *value1 = context->Pop();
-            if (value1->GetBool(context)) {
+            if (value1->GetBool()) {
                 context->Push(new Values::Value(value1)); 
                 break;
             }
-            if (value2->GetBool(context)) {
+            if (value2->GetBool()) {
                 context->Push(new Values::Value(value2)); 
                 break;
             }
@@ -134,44 +134,44 @@ ReturnCode OperatorInstruction::Run(Context *context) {
         case Operators::And: {
             Values::Value *value2 = context->Pop(); 
             Values::Value *value1 = context->Pop(); 
-            context->Push(new Values::Value(value1->GetBool(context) && value2->GetBool(context))); 
+            context->Push(new Values::Value(value1->GetBool() && value2->GetBool())); 
         } break;
         case Operators::IsEqual: {
-            Values::Value *value2 = context->Pop()->Calculate(context);
-            Values::Value *value1 = context->Pop()->Calculate(context);
+            Values::Value *value2 = context->Pop()->Calculate();
+            Values::Value *value1 = context->Pop()->Calculate();
             if (value1->type == Values::ValueTypes::Undefined || value2->type == Values::ValueTypes::Undefined) {
                 context->Push(new Values::Value());
                 break;
             }
-            context->Push(new Values::Value(value1->GetBool(context) == value2->GetBool(context))); 
+            context->Push(new Values::Value(value1->GetBool() == value2->GetBool())); 
         } break;
         case Operators::IsNotEqual:  {
-            Values::Value *value2 = context->Pop()->Calculate(context);
-            Values::Value *value1 = context->Pop()->Calculate(context);
+            Values::Value *value2 = context->Pop()->Calculate();
+            Values::Value *value1 = context->Pop()->Calculate();
             if (value1->type == Values::ValueTypes::Undefined || value2->type == Values::ValueTypes::Undefined) {
                 context->Push(new Values::Value());
                 break;
             }
-            context->Push(new Values::Value(value1->GetBool(context) != value2->GetBool(context))); 
+            context->Push(new Values::Value(value1->GetBool() != value2->GetBool())); 
         } break;
         case Operators::IsLess: STANDARD_BINARY_OPERATOR(<); break;
         case Operators::IsMore: STANDARD_BINARY_OPERATOR(>); break;
         case Operators::IsLessOrEqual: STANDARD_BINARY_OPERATOR(<=); break;
         case Operators::IsMoreOrEqual: STANDARD_BINARY_OPERATOR(>=); break;
         case Operators::Negative:
-            context->Push(new Values::Value(-context->Pop()->GetValue(context)));
+            context->Push(new Values::Value(-context->Pop()->GetValue()));
         break;
         case Operators::Positive:
-            context->Push(new Values::Value(context->Pop()->GetValue(context)));
+            context->Push(new Values::Value(context->Pop()->GetValue()));
         break;
         case Operators::Inc: 
-            context->Push(new Values::Value(context->Pop()->GetValue(context)+1));      //Неявное объявление 1
+            context->Push(new Values::Value(context->Pop()->GetValue()+1));      //Неявное объявление 1
         break;
         case Operators::Dec: 
-            context->Push(new Values::Value(context->Pop()->GetValue(context)-1));
+            context->Push(new Values::Value(context->Pop()->GetValue()-1));
         break;
         case Operators::Not:
-            context->Push(new Values::Value(!context->Pop()->GetValue(context)));
+            context->Push(new Values::Value(!context->Pop()->GetValue()));
         break;
     }
     return ReturnCode::None;
@@ -188,7 +188,7 @@ ReturnCode EmptyValueInstruction::Run(Context *context) {
 }
 
 ReturnCode AddressInstruction::Run(Context *context) {
-    context->Push(new Values::Value(Values::AddressType(position)));
+    context->Push(new Values::Value(Values::AddressType(position, context)));
     return ReturnCode::None;
 }
 
@@ -200,3 +200,45 @@ ReturnCode TupleInstruction::Run(Context *context) {
     context->Push(new Values::Value(value));
     return ReturnCode::None;
 }
+
+
+
+std::map<Operators, std::string> OperatorInstruction::str_operators = {
+    {Operators::Pass, "Pass"}, 
+    {Operators::Add, "+"}, 
+    {Operators::Substract, "-"}, 
+    {Operators::Multiply, "*"}, 
+    {Operators::Divide, "/"},
+    {Operators::Mod, "%"},
+    {Operators::Negative, "Negative"}, 
+    {Operators::Positive, "Positive"}, 
+    {Operators::Dec, "Dec"}, 
+    {Operators::Inc, "Inc"}, 
+    {Operators::Not, "Not"}, 
+    {Operators::Or, "||"}, 
+    {Operators::And, "&&"}, 
+    {Operators::IsEqual, "=="}, 
+    {Operators::IsNotEqual, "!="}, 
+    {Operators::IsLess, "<"}, 
+    {Operators::IsMore, ">"}, 
+    {Operators::IsLessOrEqual, "<="}, 
+    {Operators::IsMoreOrEqual, ">="}, 
+    {Operators::Equate, "Equate"}, 
+    {Operators::Unpack, "Unpack"}, 
+    {Operators::Clone, "Clone"}, 
+    {Operators::Index, "Index"}, 
+    {Operators::ToTuple, "ToTuple"}, 
+    {Operators::Length, "Length"}, 
+    {Operators::Return, "Return"}, 
+    {Operators::Jump, "Jump"}, 
+    {Operators::Jz, "Jz"}, 
+    {Operators::Jnz, "Jnz"}, 
+    {Operators::Call, "Call"}, 
+    {Operators::CallArg, "CallArg"}, 
+    {Operators::UseInnerAccess, "Inner"}, 
+    {Operators::UseMutableVars, "Mutable"}, 
+    {Operators::Pop, "Pop"}, 
+    {Operators::Print, "Print"},
+    {Operators::PrintLf, "\\n"},
+    {Operators::PrintMyName, "Me!"},
+};   

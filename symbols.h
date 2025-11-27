@@ -24,6 +24,8 @@ namespace Symbols {
 
     class Symbol {
         public:
+        static std::map<NonTerminals, std::string> str_non_terminals;
+
         std::string name;
         NonTerminals non_terminal;
         bool is_terminal;
