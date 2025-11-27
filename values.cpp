@@ -4,6 +4,7 @@
 #include "context.h"
 
 using namespace Values;
+using namespace std::string_literals;
 
 Value::Value(DefaultValueType value) {
     this->value = new DefaultValueType(value);
@@ -21,7 +22,8 @@ Value::Value() {
     type = ValueTypes::Undefined;
 }
 Value::Value(Value* value) {            //clone value
-    SetTo(value);
+    this->value = value->value;
+    this->type = value->type;
 }
 Value::~Value() {
     // switch (type) {
@@ -35,36 +37,38 @@ Value::~Value() {
     // }
 }
 
+
+// IsBool в условия в insructions
+// Mutable
+// ? - название переменной в кортеж
+
+
 Value* Value::LinkToVariable(VariableId id, Context* context) {
     linked_to_variable_ = {static_cast<int>(id), context};
     return this;
 }
-std::string Value::GetVariableName() {
+std::string Value::GetVariableName() const {
     if (IsLinkedToVariable())
         return linked_to_variable_.context->GetVariableName(linked_to_variable_.id);
     return "";
 }
-bool Value::IsLinkedToVariable() {
+bool Value::IsLinkedToVariable() const {
     return linked_to_variable_.id!=-1;
 }
 
+bool Value::IsMutable() const {
+    if (!IsLinkedToVariable()) return false;
+    if (type==ValueTypes::Undefined) return true;
+    return linked_to_variable_.context->IsVariableMutable(linked_to_variable_.id);
+}
+
 Value *Value::SetTo(const Value* value) {               // Set internal value and type
+    if (!IsMutable()) {
+        throw std::runtime_error("Exec: Modifying immutable value \""s + GetVariableName() + "\"");
+    }
     this->value = value->value;
     this->type = value->type;
     return this;
-}
-
-DefaultValueType& Value::GetValue(Context* context) const {
-    switch (type) {
-        case ValueTypes::Undefined:
-            throw std::runtime_error("Exec: Operation with Undefined value"); 
-        case ValueTypes::Address:
-            return GetAddress().getContext(context)->Run()->GetValue(context);
-        case ValueTypes::Tuple:
-            throw std::runtime_error("Exec: Conversion Tuple -> Value"); 
-        default:
-            return *(DefaultValueType*)value;
-    }
 }
 
 AddressType& Value::GetAddress() const {
@@ -73,15 +77,46 @@ AddressType& Value::GetAddress() const {
     return *(AddressType*)value;
 }
 
+Value *Value::Calculate(Context* context) {
+    if (type==ValueTypes::Address)
+        return GetAddress().getContext(context)->Run()->Calculate(context);
+    return this;
+}
+
+DefaultValueType& Value::GetValue(Context* context) {
+    Value *v = Calculate(context);
+    switch (v->type) {
+        case ValueTypes::Undefined:
+            throw std::runtime_error("Exec: Operation with Undefined value"); 
+        case ValueTypes::Tuple:
+            throw std::runtime_error("Exec: Cannot onvert Tuple to Value"); 
+        case ValueTypes::Default: 
+            return *(DefaultValueType*)v->value;
+        default : 
+            throw std::runtime_error("Exec: Error"); 
+    }
+}
+
 TupleType& Value::GetTuple(Context* context) {
     switch (type) {
         case ValueTypes::Undefined:
             return *(new TupleType());                /// !!! - how to delete??? !!!!
         case ValueTypes::Default: 
         case ValueTypes::Address:
-            return *(new TupleType{this});              /// !!! - how to delete??? !!!!
+            return *(new TupleType({this}));              /// !!! - how to delete??? !!!!
         default:
             return *(TupleType*)value;
+    }
+}
+
+bool Value::GetBool(Context* context) {
+    Value *v = Calculate(context);
+    switch (v->type) {
+        case ValueTypes::Default:
+            return v->GetValue();
+        case ValueTypes::Tuple:
+            return v->GetTuple().size();
+        default: return false;
     }
 }
 
@@ -127,7 +162,7 @@ AddressType::AddressType(size_t position, Context *context){
 Context *AddressType::getContext(Context *fallback) {
     // Если у адреса есть контекст, значит из него уже вышли через Return, можно делать Jump
     if (this->context) {
-        this->context->Result()->Jump(this->position); // Этот Jump будет при вызове Return контекста. Тут только для наглядности
+        this->context->Result()->Clear()->Jump(this->position); // Этот Jump будет при вызове Return контекста. Тут только для наглядности
         return this->context;
     }
     return new Context(fallback, this->position);       // How to delete this? 
@@ -164,7 +199,7 @@ std::string TupleType::str(Context *context) const {
 TupleType TupleType::Clone(const TupleType &src) {
     TupleType dest;
     for (auto element: src) {
-        dest.push_back(new Value(element));
+        dest.push_back((new Value(element)));
     }
     return dest;
 }

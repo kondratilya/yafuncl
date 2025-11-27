@@ -29,6 +29,12 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
         case Actions::ModifyerOuter: 
             modifyers_.insert(Modifyer::Outer);
         break;
+        case Actions::ModifyerMutable: 
+            modifyers_.insert(Modifyer::Mutable);
+        break;
+        case Actions::ModifyerImmutable: 
+            modifyers_.insert(Modifyer::Immutable);
+        break;
         case Actions::TupleEmpty: 
             code.push_back(new TupleInstruction(0));
         break;
@@ -180,7 +186,9 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
             if (modifyers_.count(Modifyer::Outer)) 
                 throw std::runtime_error("Syntax: Outer modifyer for function");
             if (modifyers_.count(Modifyer::Inner)) 
-                code.push_back(new OperatorInstruction(Operators::InnerAccess));
+                code.push_back(new OperatorInstruction(Operators::UseInnerAccess));
+            if (modifyers_.count(Modifyer::Mutable)) 
+                code.push_back(new OperatorInstruction(Operators::UseMutableVars));
             modifyers_.clear();
         break;
         case Actions::EndFunction: { 

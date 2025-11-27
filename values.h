@@ -25,6 +25,12 @@ namespace Values {
         public:
         TupleType() : std::list<Value*>() {}
         TupleType(std::initializer_list<Value*> init) : std::list<Value*>(init) {};
+
+        TupleType &operator+ (TupleType &other) {
+            other.splice(this->std::list<Value*>::end(), other);
+            return *this;
+        }
+
         operator std::string() const;
         std::string str(Context *context=NULL) const;
         static TupleType Clone(const TupleType &src);
@@ -42,9 +48,12 @@ namespace Values {
             int id = -1;
             Context *context = NULL;
         } linked_to_variable_;
-        public:
         void *value = NULL;
+        
+
+        public:
         ValueTypes type;
+        
         Value(DefaultValueType value);
         Value(AddressType value);
         Value(TupleType value);
@@ -53,14 +62,17 @@ namespace Values {
         ~Value();
 
         Value* LinkToVariable(VariableId id, Context* context);
-        std::string GetVariableName();
-        bool IsLinkedToVariable();
+        std::string GetVariableName() const;
+        bool IsLinkedToVariable() const;
+        bool IsMutable() const;
 
         Value* SetTo(const Value *value);  // Set internal value and type
 
-        DefaultValueType& GetValue(Context* context=NULL) const;
+        Value *Calculate(Context* context);
+        DefaultValueType& GetValue(Context* context=NULL);
         AddressType& GetAddress() const;
         TupleType& GetTuple(Context* context=NULL);
+        bool GetBool(Context* context=NULL);
 
         operator std::string();
         std::string str(Context* context=NULL);

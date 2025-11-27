@@ -2,7 +2,8 @@
 #include <set>
 
 enum class Modifyer {
-    Inner, Outer,
+    Inner, Outer, 
+    Mutable, Immutable,
 };
 
 typedef std::set<Modifyer> Modifyers;

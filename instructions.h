@@ -21,7 +21,7 @@ enum class Operators {
     Equate, Return, Jump, Jz, Jnz, Call, CallArg, Pop, 
     Unpack, Index, ToTuple, Length, Clone,
     Print, PrintLf, PrintChar, PrintMyName,
-    InnerAccess,
+    UseInnerAccess, UseMutableVars,
 };
 
 enum class ReturnCode {
@@ -74,7 +74,8 @@ class OperatorInstruction: public Instruction {
             {Operators::Jnz, "Jnz"}, 
             {Operators::Call, "Call"}, 
             {Operators::CallArg, "CallArg"}, 
-            {Operators::InnerAccess, "InnerAccess"}, 
+            {Operators::UseInnerAccess, "Inner"}, 
+            {Operators::UseMutableVars, "Mutable"}, 
             {Operators::Pop, "Pop"}, 
             {Operators::Print, "Print"},
             {Operators::PrintLf, "\\n"},
@@ -88,23 +89,36 @@ class OperatorInstruction: public Instruction {
 
 class VariableInstruction: public Instruction {
     VariableId index;
-    AccessType access_type_;
-    bool is_const = true;
+    AccessType access_type_ = AccessType::Default;
+    MutabilityType mutability_type_ = MutabilityType::Default;
     public:
     VariableInstruction(VariableId index, Modifyers modifyers={}): Instruction() {
         this->index = index;
-        access_type_ = AccessType::Default;
         if (modifyers.count(Modifyer::Inner) && modifyers.count(Modifyer::Outer)) {
-            throw std::runtime_error("Exec: Conflicting modifyers");
+            throw std::runtime_error("Exec: Conflicting modifyers: inner, outer");
         }
         if (modifyers.count(Modifyer::Inner)) {
             access_type_ = AccessType::Inner;
         } else if (modifyers.count(Modifyer::Outer)) {
             access_type_ = AccessType::Outer;
         }
+        if (modifyers.count(Modifyer::Mutable) && modifyers.count(Modifyer::Immutable) ) {
+            throw std::runtime_error("Exec: Conflicting modifyers: mutable, immutable");
+        }
+        if (modifyers.count(Modifyer::Mutable)) {
+            mutability_type_ = MutabilityType::Mutable;
+        } else if (modifyers.count(Modifyer::Immutable)) {
+            mutability_type_ = MutabilityType::Immutable;
+        }
     }
     operator std::string() const override { 
-        std::ostringstream s; s << "[" << index << "]"; return s.str();
+        std::ostringstream s; 
+        s << "[" << 
+            ((access_type_ == AccessType::Inner)?"inner ":"") << 
+            ((access_type_ == AccessType::Outer)?"outer ":"") << 
+            ((mutability_type_ == MutabilityType::Mutable)?"mutable ":"") << 
+            ((mutability_type_ == MutabilityType::Immutable)?"immutable ":"") << index << "]"; 
+        return s.str();
     }
     ReturnCode Run(Context *context) override;
 };
