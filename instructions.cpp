@@ -166,7 +166,7 @@ ReturnCode OperatorInstruction::Run(Context *context) {
             context->Push(new Values::Value(context->Pop()->GetValue()-1));
         break;
         case Operators::Not:
-            context->Push(new Values::Value(!context->Pop()->GetValue()));
+            context->Push(new Values::Value(!context->Pop()->GetBool()));
         break;
     }
     return ReturnCode::None;

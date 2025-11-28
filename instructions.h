@@ -56,16 +56,10 @@ class VariableInstruction: public Instruction {
     public:
     VariableInstruction(VariableId index, Modifyers modifyers={}): Instruction() {
         this->index = index;
-        if (modifyers.count(Modifyer::Inner) && modifyers.count(Modifyer::Outer)) {
-            throw std::runtime_error("Exec: Conflicting modifyers: inner, outer");
-        }
         if (modifyers.count(Modifyer::Inner)) {
             access_type_ = AccessType::Inner;
         } else if (modifyers.count(Modifyer::Outer)) {
             access_type_ = AccessType::Outer;
-        }
-        if (modifyers.count(Modifyer::Mutable) && modifyers.count(Modifyer::Immutable) ) {
-            throw std::runtime_error("Exec: Conflicting modifyers: mutable, immutable");
         }
         if (modifyers.count(Modifyer::Mutable)) {
             mutability_type_ = MutabilityType::Mutable;

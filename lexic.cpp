@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "lexic.h"
 
 using namespace Tokens;
@@ -14,6 +15,29 @@ LexicAnalys::Terminals LexicAnalys::terminal(int c) {
     throw std::runtime_error("Lexic: Unknown symbol "s + (char)(c));
 }
 
+int LexicAnalys::GetSymbol() {
+    if (read_line_.empty()) {
+        if (!std::getline(*stream_, read_line_)) {
+            return -1;
+        }
+        line_++;
+        column_=0;
+        return '\n';
+    }
+    column_++;
+    int c = read_line_.front(); 
+    read_line_.erase(0, 1);
+    return c;
+}
+
+void LexicAnalys::UnGetSymbol(char c) {
+    column_--;
+    read_line_ = std::string(1, c)+read_line_;
+}
+
+void LexicAnalys::SkipRest() {
+    read_line_.clear();
+}
 
 Token *LexicAnalys::Get() {
     States state = States::Start, ostate = States::Start;
@@ -28,13 +52,13 @@ Token *LexicAnalys::Get() {
     while (true) {
         int symbol;
 
-        Terminals term = this->terminal(symbol = this->stream->get());
+        Terminals term = this->terminal(symbol = GetSymbol());
         state = rules[static_cast<int>(state)][static_cast<int>(term)];
 
         switch (state) {
             case States::Start: 
                 if (ostate != States::Start) {
-                    this->stream->unget();
+                    UnGetSymbol(static_cast<char>(symbol));
                     switch (ostate) {
                         case States::Name:
                             if (keywords.count(buffer))
@@ -43,11 +67,11 @@ Token *LexicAnalys::Get() {
                         case States::Operator: {
                             std::string read_operators = buffer;
                             while (!buffer.empty() && !keywords.count(buffer)) {
+                                UnGetSymbol(buffer.back());
                                 buffer.pop_back();
-                                this->stream->unget();
                             }
                             if (buffer.empty()){
-                                throw std::runtime_error("Lexic: Unknown operator "s + read_operators);
+                                throw std::runtime_error("Lexic: Unknown operator \""s + read_operators + "\"");
                             }
                             if (buffer == "}") {  // Fake expression, for ';'
                                 UnGet(new Token(buffer));
@@ -66,9 +90,8 @@ Token *LexicAnalys::Get() {
                 return new Token(EMPTY);
             break;
             case States::Comment:
-                while (!stream->eof() && stream->get()!='\n'); 
-                this->stream->unget();
-            break;
+                SkipRest();
+             break;
             default:
                 buffer += symbol;
         }

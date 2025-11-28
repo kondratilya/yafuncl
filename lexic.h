@@ -48,13 +48,19 @@ class LexicAnalys {
 
     Terminals terminal(int c);
 
-    std::istream *stream;
+    std::istream *stream_;
     std::stack<Token *> ungets_;
+
+    std::string read_line_;
+    int line_=0, column_=0;
+    int GetSymbol();
+    void UnGetSymbol(char c);
+    void SkipRest();
 
     public:
     LexicAnalys(std::istream &stream) { 
         Rules().GetTerminalsList(keywords);
-        this->stream = &stream;
+        stream_ = &stream;
     };
     Token *Get();
     Token *ShowNext();

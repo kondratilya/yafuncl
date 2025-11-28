@@ -107,7 +107,7 @@ TupleType& Value::GetTuple() {
             return *(new TupleType());                /// !!! - how to delete??? !!!!
         case ValueTypes::Default: 
         case ValueTypes::Address:
-            return *(new TupleType({this}));              /// !!! - how to delete??? !!!!
+            return *(new TupleType({new Value(this)}));              /// !!! - how to delete??? !!!!
         default:
             return *(TupleType*)value;
     }
