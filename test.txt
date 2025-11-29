@@ -1,5 +1,5 @@
 0={};                               # нет литералов. По задумке). {} неявно возвращает 0
-1={++0;};                           # ++ неявно содержит 1. ++ не меняет значения переменной
+1={++0;};                           # "++" неявно содержит 1. "++" не меняет значения переменной
 2={++1;};                           # переменные содержат адреса функций, но не значения.
 3={++2;};
 4={++3;};                           # гораздо эффективнее 4=+{++3;}, но менее "функционально" ;)
@@ -7,41 +7,8 @@
 6={++5;};
 7={++6;};
 8={++7;};
-9={++8;};           
+9={++8;};
 10={++9;};
-
-
-abs = inner {
-    (a, ) = arguments;
-    if a < {}: -a else: a;
-};
-
-range = inner {
-    (mutable from, mutable to, mutable step) = arguments;
-    outer abs;
-    step = (step)=>outer abs;
-    mutable result = ();
-    f = if from < to : {
-        while {
-            result = result + from;
-            from = from + step;
-            from < to;
-        };
-    } else: {
-        while {
-            result = result + from;
-            from = from - step;
-            from > to;
-        };
-    };
-    =>f;
-    result;
-};
-
-@@((+2,+10,+1)=>range);
-@@((+2*10+5,+10+1,1)=>range);
-@@((+3*10+6,+5*10+8,3)=>range);
-
 
 HelloWorld = ({7*10+2;}, 10*10+1, 10*10+8, 10*10+8, 10*10+10+1, 3*10+2, 10*10+10+9, 10*10+10+1, 10*10+10+4, 10*10+8, 10*10, 10+3, 10);
 @@@ HelloWorld;
@@ -131,6 +98,18 @@ recursion = {                       # Рекурсии
         @@@(10, 10+3);              # "\r\n"
 };
 1=>recursion;
+
+i1 = {                              # Вложенные вызовы (и доступ по индексу)
+    (
+        2,3,4,
+        { 
+            @?WeAreHere; 
+            @arguments;(arguments+0, arguments+1, arguments+2);
+        }
+    );
+};
+@(8=>((=>i1)[3]))[2];
+
 
 @@a=(                               # Кортежи
     1,
@@ -232,4 +211,58 @@ empty = {                           # возвращает пустое ли з�
 a=1;@a=>empty;
 a=0;@@a=>empty;
 
-@?Have; @?a; @?nice; @?day; @@@((3,3)=>base10, 10+3, 10);
+@?Have; @?a; @?nice; @?day; @@@((3,3)=>base10, 10+3, 10); 
+
+
+
+
+
+
+return;
+
+
+
+
+
+abs = inner {
+    (a, ) = arguments;
+    if a < {}: -a else: a;
+};
+
+range = inner {
+    (mutable from, mutable to, mutable step) = ...arguments;
+    outer abs;
+    step = (step)=>outer abs;
+    mutable result = ();
+    f = if from < to : {
+        while {
+            result = result + from;
+            from = from + step;
+            from < to;
+        };
+    } else: {
+        while {
+            result = result + from;
+            from = from - step;
+            from > to;
+        };
+    };
+    =>f;
+    result;
+};
+
+@@tuple1 = ((+2,+10,+1)=>range);
+@@tuple2 = ((+2*10+5,+10+1,1)=>range);
+@@tuple3 = ((+3*10+6,+5*10+8,3)=>range);
+
+iterator = inner {
+    (list, ) = ...arguments;
+    mutable index;
+    first = { @?first; @@index = {}; };
+    next = { @?next; @@index = ++ index; @list[index]; };
+    condition = { @?condition; @@(index < list=>length); };
+    (first, next, condition);
+};
+
+
+@@i1 = tuple1=>iterator;

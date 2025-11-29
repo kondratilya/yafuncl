@@ -2,6 +2,9 @@
 #include "lexic.h"
 #include "syntax.h"
 #include "execute.h"
+#ifdef TESTS
+#include "tests.h"
+#endif
 
 using namespace std;
 
@@ -12,9 +15,15 @@ int main(int argc, char*argv[]) {
     } else {
         source.open("test.txt"); 
     }
-    
+
+#ifndef TESTS
+    std::ofstream null_stream;
     LexicAnalys lexic(source);
-    SyntaxAnalys syntax(lexic);
-    Execute exec(syntax);
+    SyntaxAnalys syntax(lexic, NULL);
+    Execute exec(syntax, &cout, &cout);
     exec.Run();
+#else
+    tests();
+#endif
+
 }

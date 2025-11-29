@@ -11,8 +11,10 @@
 
 class Execute {
     SyntaxAnalys *syntax;
+    std::ostream *output_;
+    std::ostream *result_;
 
     public:
-    Execute(SyntaxAnalys &syntax);
+    Execute(SyntaxAnalys &syntax, std::ostream *result=NULL, std::ostream *output=NULL);
     Values::Value *Run();
 };

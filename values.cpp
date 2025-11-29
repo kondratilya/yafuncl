@@ -26,22 +26,16 @@ Value::Value(Value* value) {            //clone value
     this->type = value->type;
 }
 Value::~Value() {
-    // switch (type) {
-    //     case ValueTypes::Undefined:break;
-    //     case ValueTypes::Default:
-    //         delete (DefaultValueType*)value;
-    //     case ValueTypes::Address:
-    //         delete (AddressType*)value;
-    //     case ValueTypes::Tuple:
-    //         delete (TupleType*)value;
-    // }
+    switch (type) {
+        case ValueTypes::Undefined:break;
+        case ValueTypes::Default:
+            delete (DefaultValueType*)value;
+        case ValueTypes::Address:
+            delete (AddressType*)value;
+        case ValueTypes::Tuple:
+            delete (TupleType*)value;
+    }
 }
-
-
-// IsBool в условия в insructions
-// Mutable
-// ? - название переменной в кортеж
-
 
 Value* Value::LinkToVariable(VariableId id, Context* context) {
     linked_to_variable_ = {static_cast<int>(id), context};
@@ -181,7 +175,17 @@ AddressType::operator std::string() const {
     return os.str();
 };
 
-TupleType::TupleType(std::initializer_list<Value*> init) : std::list<Value*>(init) {};
+TupleType::TupleType(std::initializer_list<Value*> init, Value*value) : std::list<Value*>(init) {
+    if (value) {
+        Link(value);
+    }
+};
+
+void TupleType::Link(Value *parent_value) {
+    if (parent_value->IsLinkedToVariable()) {
+        for (auto el: *this) el->LinkToVariable(parent_value);
+    }
+}
 
 TupleType::operator std::string() const { 
     std::ostringstream os; 
@@ -204,7 +208,7 @@ TupleType &TupleType::operator+ (TupleType &other) {
 
 Value *TupleType::operator[] (int index) {
     if (index < 0) index = this->size() + index;
-    if (index < 0 || index > this->size()) {
+    if (index < 0 || index >= this->size()) {
         throw std::runtime_error("Exec: Index out of range"); 
     }
     Values::TupleType::iterator it = this->begin();

@@ -1,6 +1,8 @@
 #include <iterator>
 #include "instructions.h"
 
+using namespace std::string_literals;
+
 #define STANDARD_BINARY_OPERATOR(_O_)  { \
                 Values::Value *value2 = context->Pop(); \
                 Values::Value *value1 = context->Pop(); \
@@ -85,16 +87,16 @@ ReturnCode OperatorInstruction::Run(Context *context) {
             context->Push(new Values::Value(context->Pop()->GetTuple()));
         break;
         case Operators::Print: 
-            std::cout << "\"" << std::string(*context->Top()) << "\" ";
+            context->Output("\""s + std::string(*context->Top()) + "\" "s);
         break;
         case Operators::PrintChar: 
-            std::cout << context->Top()->str();
+            context->Output(context->Top()->str());
         break;
         case Operators::PrintMyName: 
-            std::cout << context->Top()->GetVariableName() << " ";
+            context->Output(context->Top()->GetVariableName() + " "s);
         break;
         case Operators::PrintLf: 
-            std::cout << std::endl;
+            context->Output("\n");
         break;
         case Operators::Add: {
             Values::Value *value2 = context->Pop()->Calculate();

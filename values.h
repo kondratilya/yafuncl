@@ -22,9 +22,11 @@ namespace Values {
     };
 
     class TupleType: public std::list<Value*> {
+        
         public:
         TupleType() : std::list<Value*>() {}
-        TupleType(std::initializer_list<Value*> init);
+        TupleType(std::initializer_list<Value*> init, Value*value=NULL);
+        void Link(Value *parent_value);
         TupleType &operator+ (TupleType &other);
         Value *operator[] (int index); 
         operator std::string() const;

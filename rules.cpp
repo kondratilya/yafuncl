@@ -82,14 +82,16 @@ const std::vector<Rule> Rules::rules = {
     {NT::T8, {"@?"s, NT::T8}, Actions::PrintMyName},
     {NT::T8, {NT::T9}},
 
-    {NT::FunctionCall, {"=>"s, NT::Block}, Actions::FunctionCall},
-    {NT::FunctionCall, {"=>"s, NT::NAME}, Actions::FunctionCall},
-    {NT::FunctionCall, {NT::T9, "=>"s, NT::Block}, Actions::FunctionCallArg},
-    {NT::FunctionCall, {NT::T9, "=>"s, NT::NAME}, Actions::FunctionCallArg},
+    // {NT::FunctionCall, {"=>"s, NT::Block}, Actions::FunctionCall},
+    // {NT::FunctionCall, {"=>"s, NT::NAME}, Actions::FunctionCall},
+    {NT::FunctionCall, {"=>"s, NT::T9}, Actions::FunctionCall},
+    // {NT::FunctionCall, {NT::T9, "=>"s, NT::Block}, Actions::FunctionCallArg},
+    // {NT::FunctionCall, {NT::T9, "=>"s, NT::NAME}, Actions::FunctionCallArg},
+    {NT::FunctionCall, {NT::T9, "=>"s, NT::T9}, Actions::FunctionCallArg},
     {NT::FunctionCall, {NT::T9, "=>"s, "length"s}, Actions::Length},
     
     {NT::T9, {NT::FunctionCall}},
-    {NT::T9, {NT::LVALUE, "="s, NT::E}, Actions::Equate},
+    {NT::T9, {NT::T9, "="s, NT::E}, Actions::Equate},
     {NT::T9, {NT::Tuple, "="s, NT::E}, Actions::Unpack},
     {NT::T9, {NT::Tuple}, Actions::CloneTuple},         // Отвязать котреж от переменных
     {NT::T9, {"("s, NT::E, ")"s}},
@@ -99,6 +101,7 @@ const std::vector<Rule> Rules::rules = {
     {NT::T9, {NT::IfElse}},
     {NT::T9, {NT::WhileEnd}},
     {NT::T9, {NT::WhileDo}, Actions::WhileEnd},
+    {NT::T9, {NT::T9, "["s, NT::E, "]"s}, Actions::Index}, 
     
     {NT::If, {"if"s, NT::E}, Actions::If},
     {NT::IfThen, {NT::If, ":"s, NT::E}, Actions::Then},
@@ -112,7 +115,6 @@ const std::vector<Rule> Rules::rules = {
     {NT::Tuple, {"("s, NT::T1, ","s, ")"s}, Actions::TupleOne},
     {NT::Tuple, {"("s, ")"s}, Actions::TupleEmpty},
 
-    {NT::LVALUE, {NT::LVALUE, "["s, NT::E, "]"s}, Actions::Index}, 
     {NT::LVALUE, {NT::NAME}},
 
     {NT::NAME, {Symbol(Tokens::ID)}, Actions::Name},

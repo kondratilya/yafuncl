@@ -27,21 +27,23 @@ class SyntaxAnalys {
     bool FindReduction(size_t &rule, size_t &head);
     bool TestRules(Symbol *S);
 
-    bool verbose_;
+    std::ostream *output_;
 
     public:
     Code code;
     size_t arguments_id = 0;
 
-    SyntaxAnalys(LexicAnalys &lexic, bool verbose=false) { 
+    SyntaxAnalys(LexicAnalys &lexic, std::ostream *output=NULL) { 
         this->lexic = &lexic; 
-        verbose_ = verbose;
+        output_ = output;
         arguments_id = names_lookup.insert("arguments");
     };
     std::string GetVariableName(VariableId id) {
         return names_lookup.get(id);
     }
     std::string StackToStr(Symbol *S=NULL);
+    void Output(std::string output);
+
     bool Analyse();
     
 };

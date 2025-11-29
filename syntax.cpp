@@ -13,6 +13,7 @@
 #include <iomanip>
 
 using namespace Symbols;
+using namespace std::string_literals;
 
 void SyntaxAnalys::RunAction(size_t rule_id) {
     switch (rules[rule_id].action) {
@@ -275,7 +276,7 @@ bool SyntaxAnalys::FindBeginning(Symbol *S, size_t &rule) {
             }
             if (beginning) {
                 if (rules[r].right.size()>j-i && rules[r].right[j-i] == *S) {
-                    if (verbose_) std::cout << "B[" << std::setw(2) << r << "] ";
+                    Output("B["s + std::to_string(r) + "] "s);
                     rule = r;
                     return true;
                 }
@@ -320,7 +321,7 @@ bool SyntaxAnalys::TestRules(Symbol *S) {
     }
 
     if (FindReduction(rule, head)) {
-        if (verbose_) std::cout << " [" << std::setw(2) << rule << "] ";
+        Output(" ["s + std::to_string(rule) + "] "s);
 
         if (rules[rule].left==NT::ROOT && stack.size() != rules[rule].right.size()) {
             throw std::runtime_error("Syntax: Early end\n"s + StackToStr(S));
@@ -341,7 +342,8 @@ bool SyntaxAnalys::TestRules(Symbol *S) {
     if (*S==Symbol(Tokens::END)) {
         throw std::runtime_error("Syntax: Error\n"s + StackToStr(S));
     }
-    if (verbose_) std::cout << std::setw(2) << " [  ] ";
+
+    Output(" [  ]"s);
     return(true);
 
 }
@@ -358,12 +360,16 @@ std::string SyntaxAnalys::StackToStr(Symbol *S) {
     return os.str();
 }
 
+void SyntaxAnalys::Output(std::string output) {
+    if(output_) *output_ << output;
+}
+
 bool SyntaxAnalys::Analyse() {
     bool to_read=true;
     Token *R;
     Symbol *S;
 
-    if (verbose_) std::cout << std::endl;
+    Output("\n");
 
     while(true){
         if(to_read) {
@@ -386,9 +392,7 @@ bool SyntaxAnalys::Analyse() {
         if(to_read)
             stack.push_back(S);
 
-        if (verbose_) {
-            std::cout << StackToStr(S) << std::endl;
-        }
+        Output(StackToStr(S) + "\n");
 
         if(stack.size()==1 && *stack[0] == Symbol(NT::ROOT)) {       
             return true;

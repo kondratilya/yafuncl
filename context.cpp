@@ -53,19 +53,21 @@ std::string Context::GetVariableName(VariableId id) {
     return syntax->GetVariableName(id);
 }
 
-Context::Context(Context *parent, size_t position): Context(*(parent->syntax), position) {
+Context::Context(Context *parent, size_t position): Context(*(parent->syntax), position, parent->result_stream_, parent->output_stream_) {
     this->parent = parent;
 }
 
-Context::Context(Context *parent, size_t position, Values::Value* arguments): Context(*(parent->syntax), position) {
+Context::Context(Context *parent, size_t position, Values::Value* arguments): Context(*(parent->syntax), position, parent->result_stream_, parent->output_stream_) {
     this->parent = parent;
     CreateVariable(syntax->arguments_id, false)->SetTo(arguments);
 }
 
-Context::Context(SyntaxAnalys &syntax, size_t position) {
+Context::Context(SyntaxAnalys &syntax, size_t position, std::ostream *result_stream, std::ostream *output_stream) {
     this->parent = NULL;
     this->syntax = &syntax;
     this->pointer = position;
+    result_stream_ = result_stream;
+    output_stream_ = output_stream;
     Result();
 }
 
@@ -76,14 +78,10 @@ Values::Value *Context::Pop() {
     }
     Values::Value *v = stack.top();
     stack.pop();
+    if (!v->IsLinkedToVariable()) {
+        // abyss_.push(v);
+    }
     return v;
-}
-
-void Context::PopDelete() {
-    if (!stack.size()) 
-        return;
-    Values::Value::Delete(stack.top());
-    stack.pop();
 }
 
 Values::Value *Context::Top() {
@@ -118,7 +116,7 @@ Context* Context::Result(Values::Value *result) {
     if (result) {
         this->result = result;
     } else {
-        this->result = new Values::Value(Values::DefaultValueType(0));    // Неявное определение 0 в языку тут
+        this->result = new Values::Value(Values::DefaultValueType(0));    // Неявное определение 0 в языке тут
     }
     return this;
 }

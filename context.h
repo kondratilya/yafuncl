@@ -28,9 +28,13 @@ class Context {
     Values::Value *result;
     AccessType access_type_ = AccessType::Default;
     bool vars_default_mutable_ = false;
+    std::ostream *output_stream_;
+    std::ostream *result_stream_;
+
+    std::stack<Values::Value> abyss_;
     public:
 
-    Context(SyntaxAnalys &syntax, size_t position=0);
+    Context(SyntaxAnalys &syntaxm, size_t position=0, std::ostream *result_stream=NULL, std::ostream *output_stream=NULL);
 
     ~Context() {
         // Контекст должен удалить значения из своей таблицы, но пока контексты не удаляю
@@ -56,6 +60,12 @@ class Context {
 
     Context* SetInnerAccess();
     Context* SetMutableVars();
+
+    void Output(std::string output) {
+        if (result_stream_) {
+            *result_stream_ << output;
+        }
+    }
 
     Values::Value *Run();
 };
