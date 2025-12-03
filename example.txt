@@ -214,16 +214,6 @@ a=0;@@a=>empty;
 @?Have; @?a; @?nice; @?day; @@@((3,3)=>base10, 10+3, 10); 
 
 
-return;
-
-
-
-
-
-
-
-
-
 abs = inner {
     (a, ) = arguments;
     if a < {}: -a else: a;
@@ -265,4 +255,4 @@ iterator = inner {
 };
 
 
-@@i1 = tuple1=>iterator;
+@@it1 = tuple1=>iterator;

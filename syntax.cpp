@@ -232,7 +232,7 @@ void SyntaxAnalys::RunAction(size_t rule_id) {
             function_definitions.pop();
             delete code[skip_to_condition];
             code[skip_to_condition] = new AddressInstruction(skip_to_condition + 6);
-            code.push_back(new AddressInstruction(skip_to_condition+2));
+            code.push_back(new AddressInstruction(skip_to_condition+2));                    /// Тут должно быть 3?
             code.push_back(new OperatorInstruction(Operators::Jnz));
             code.push_back(new OperatorInstruction(Operators::Pop));
             delete code[skip_to_condition+4];

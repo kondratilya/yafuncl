@@ -87,7 +87,7 @@ ReturnCode OperatorInstruction::Run(Context *context) {
             context->Push(new Values::Value(context->Pop()->GetTuple()));
         break;
         case Operators::Print: 
-            context->Output("\""s + std::string(*context->Top()) + "\" "s);
+            context->Output("'"s + std::string(*context->Top()) + "' "s);
         break;
         case Operators::PrintChar: 
             context->Output(context->Top()->str());
@@ -140,7 +140,7 @@ ReturnCode OperatorInstruction::Run(Context *context) {
                 context->Push(new Values::Value());
                 break;
             }
-            context->Push(new Values::Value(value1->GetBool() == value2->GetBool())); 
+            context->Push(new Values::Value(value1->GetValue() == value2->GetValue())); 
         } break;
         case Operators::IsNotEqual:  {
             Values::Value *value2 = context->Pop()->Calculate();
@@ -149,7 +149,7 @@ ReturnCode OperatorInstruction::Run(Context *context) {
                 context->Push(new Values::Value());
                 break;
             }
-            context->Push(new Values::Value(value1->GetBool() != value2->GetBool())); 
+            context->Push(new Values::Value(value1->GetValue() != value2->GetValue())); 
         } break;
         case Operators::IsLess: STANDARD_BINARY_OPERATOR(<); break;
         case Operators::IsMore: STANDARD_BINARY_OPERATOR(>); break;
