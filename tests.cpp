@@ -182,14 +182,16 @@ void tests() {
     assert(test(numbers +                         // Циклы
         "mutable i=0;"
         "while { "
-        "    @i=++i;"
+        "    i=++i;"
         "    if i%2 : @i else: @(i,);"
- //       "    return 1 if i == 3;\n"           // continue
- //       "    return 0 if i > 7;"            // break
+        "    return 1 if i == 3;\n"           // continue
+        "    @? ret1;"
+        "    return 0 if i > 7;"            // break
+        "    @? ret2;"
         "    i<10;"
         "}; @i;"
     ) == 
-        "'1' '1' '2' '(2, )' '3' '3' '4' '(4, )' '5' '5' '6' '(6, )' '7' '7' '8' '(8, )' '9' '9' '10' '(10, )' '10'"s
+        "'1' ret1 ret2 '(2, )' ret1 ret2 '3' '(4, )' ret1 ret2 '5' ret1 ret2 '(6, )' ret1 ret2 '7' ret1 ret2 '(8, )' ret1 '8'"s
     );
 
     assert(test(numbers +                         // if-else

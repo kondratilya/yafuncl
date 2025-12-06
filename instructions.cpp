@@ -78,7 +78,7 @@ ReturnCode OperatorInstruction::Run(Context *context) {
             Values::DefaultValueType index = context->Pop()->GetValue();
             Values::Value* tuple_value = context->Pop();
             Values::TupleType tuple = tuple_value->GetTuple();
-            context->Push(tuple[index]->LinkToVariable(tuple_value));
+            context->Push(tuple[static_cast<int>(index)]->Reference(tuple_value));
         } break;
         case Operators::Length: 
             context->Push(new Values::Value(context->Pop()->GetTuple().size()));
@@ -110,11 +110,7 @@ ReturnCode OperatorInstruction::Run(Context *context) {
         case Operators::Substract: STANDARD_BINARY_OPERATOR(-); break;
         case Operators::Multiply: STANDARD_BINARY_OPERATOR(*); break;
         case Operators::Divide: STANDARD_BINARY_OPERATOR(/); break;
-        case Operators::Mod: {
-            Values::DefaultValueType value2 = context->Pop()->GetValue();
-            Values::DefaultValueType value1 = context->Pop()->GetValue();
-            context->Push(new Values::Value(value1 - (int)(value1/value2) * value2)); 
-        } break;
+        case Operators::Mod: STANDARD_BINARY_OPERATOR(%); break;
         case Operators::Or: {
             Values::Value *value2 = context->Pop();
             Values::Value *value1 = context->Pop();
@@ -151,7 +147,7 @@ ReturnCode OperatorInstruction::Run(Context *context) {
             }
             context->Push(new Values::Value(value1->GetValue() != value2->GetValue())); 
         } break;
-        case Operators::IsLess: STANDARD_BINARY_OPERATOR(<); break;
+        case Operators::IsLess:  STANDARD_BINARY_OPERATOR(<); break;
         case Operators::IsMore: STANDARD_BINARY_OPERATOR(>); break;
         case Operators::IsLessOrEqual: STANDARD_BINARY_OPERATOR(<=); break;
         case Operators::IsMoreOrEqual: STANDARD_BINARY_OPERATOR(>=); break;
@@ -162,10 +158,10 @@ ReturnCode OperatorInstruction::Run(Context *context) {
             context->Push(new Values::Value(context->Pop()->GetValue()));
         break;
         case Operators::Inc: 
-            context->Push(new Values::Value(context->Pop()->GetValue()+1));      //Неявное объявление 1
+            context->Push(new Values::Value(context->Pop()->GetValue().inc()));      //Неявное объявление 1
         break;
         case Operators::Dec: 
-            context->Push(new Values::Value(context->Pop()->GetValue()-1));
+            context->Push(new Values::Value(context->Pop()->GetValue().dec()));
         break;
         case Operators::Not:
             context->Push(new Values::Value(!context->Pop()->GetBool()));

@@ -20,7 +20,7 @@ VariableInfo Context::SearchVariable(VariableId id, AccessType access_type) {
 }
 
 Values::Value *Context::CreateVariable(VariableId id, bool is_mutable) {
-    Values::Value* val = (new Values::Value())->LinkToVariable(id, this);
+    Values::Value* val = (new Values::Value())->Reference(id, this);
     lookup[id] = {val, is_mutable};
     return val;
 }
@@ -71,15 +71,15 @@ Context::Context(SyntaxAnalys &syntax, size_t position, std::ostream *result_str
     Result();
 }
 
-Values::Value *Context::Pop() {
+Values::Value *Context::Pop(bool is_to_abyss) {
     if (!stack.size()) {
         // std::cout << "POP EMPTY!";
         return new Values::Value();
     }
     Values::Value *v = stack.top();
     stack.pop();
-    if (!v->IsLinkedToVariable()) {
-        // abyss_.push(v);
+    if (is_to_abyss) {
+        abyss_.push(v);
     }
     return v;
 }
@@ -126,14 +126,21 @@ Values::Value *Context::Run() {
     while (pointer < syntax->code.size()) {
         auto instruction = syntax->code[pointer];
 
-//  std::cout << std::string(*instruction) << " ";
+//   std::cout << std::string(*instruction) << " ";
         ret = instruction->Run(this);
+        // while (abyss_.size()) {
+        //     Values::Value* v = abyss_.top();
+        //     Values::Value::Delete(v);
+        //     std::cout << v;
+        //     abyss_.pop();
+        // }
+
         if (ret == ReturnCode::Continue) {
             continue;
         }
         if (ret == ReturnCode::Return) {
             Values::Value *new_result = new Values::Value(result);
-            Result(NULL);
+            Result(NULL);          
             return new_result;
         }
         ++pointer;

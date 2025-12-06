@@ -31,7 +31,7 @@ class Context {
     std::ostream *output_stream_;
     std::ostream *result_stream_;
 
-    std::stack<Values::Value> abyss_;
+    std::stack<Values::Value*> abyss_;
     public:
 
     Context(SyntaxAnalys &syntaxm, size_t position=0, std::ostream *result_stream=NULL, std::ostream *output_stream=NULL);
@@ -49,7 +49,7 @@ class Context {
     Context(Context *parent, size_t position=0);
     Context(Context *parent, size_t position, Values::Value* arguments);
     
-    Values::Value* Pop();
+    Values::Value* Pop(bool is_to_abyss=true);
     void PopDelete();
     Values::Value* Top();
     void Push(Values::Value *v);

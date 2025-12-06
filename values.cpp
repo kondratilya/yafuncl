@@ -20,59 +20,63 @@ Value::Value(TupleType value) {
 }
 Value::Value() {
     type = ValueTypes::Undefined;
+    this->value = new UndefinedValue();
 }
 Value::Value(Value* value) {            //clone value
-    this->value = value->value;
+    this->value = value->value->clone();
     this->type = value->type;
 }
 Value::~Value() {
+    std::cout << "-";
     switch (type) {
         case ValueTypes::Undefined:break;
         case ValueTypes::Default:
-            delete (DefaultValueType*)value;
+            delete static_cast<DefaultValueType*>(value);
+        break;
         case ValueTypes::Address:
-            delete (AddressType*)value;
+            delete static_cast<AddressType*>(value);
+        break;
         case ValueTypes::Tuple:
-            delete (TupleType*)value;
+            delete static_cast<TupleType*>(value);
+        break;
     }
 }
 
-Value* Value::LinkToVariable(VariableId id, Context* context) {
-    linked_to_variable_ = {static_cast<int>(id), context};
+Value* Value::Reference(VariableId id, Context* context) {
+    reference_ = {static_cast<int>(id), context};
     return this;
 }
-Value* Value::LinkToVariable(Value* source_link) {
-    linked_to_variable_ = source_link->linked_to_variable_;
+Value* Value::Reference(Value* source_reference) {
+    reference_ = source_reference->reference_;
     return this;
 }
 std::string Value::GetVariableName() const {
-    if (IsLinkedToVariable())
-        return linked_to_variable_.context->GetVariableName(linked_to_variable_.id);
+    if (IsReferenced())
+        return reference_.context->GetVariableName(reference_.id);
     return "";
 }
-bool Value::IsLinkedToVariable() const {
-    return linked_to_variable_.id!=-1;
+bool Value::IsReferenced() const {
+    return reference_.id!=-1;
 }
 
 bool Value::IsMutable() const {
-    if (!IsLinkedToVariable()) return false;
+    if (!IsReferenced()) return false;
     if (type==ValueTypes::Undefined) return true;
-    return linked_to_variable_.context->IsVariableMutable(linked_to_variable_.id);
+    return reference_.context->IsVariableMutable(reference_.id);
 }
 
 Value *Value::SetTo(const Value* value) {               // Set internal value and type
     if (!IsMutable()) {
         throw std::runtime_error("Exec: Modifying immutable value \""s + GetVariableName() + "\"");
     }
-    this->value = value->value;
+    delete this->value;
+    this->value = value->value->clone();
     this->type = value->type;
     return this;
 }
 
 AddressType& Value::GetAddress() const {
-    if (type!=ValueTypes::Address)
-        throw std::runtime_error("Exec: Call to non-address");
-    return *(AddressType*)value;
+    return value->Address();
 }
 
 Value *Value::Calculate() {
@@ -82,17 +86,7 @@ Value *Value::Calculate() {
 }
 
 DefaultValueType& Value::GetValue() {
-    Value *v = Calculate();
-    switch (v->type) {
-        case ValueTypes::Undefined:
-            throw std::runtime_error("Exec: Operation with Undefined value"); 
-        case ValueTypes::Tuple:
-            throw std::runtime_error("Exec: Cannot onvert Tuple to Value"); 
-        case ValueTypes::Default: 
-            return *(DefaultValueType*)v->value;
-        default : 
-            throw std::runtime_error("Exec: Error"); 
-    }
+    return value->ToDefaultValueType();
 }
 
 TupleType& Value::GetTuple() {
@@ -108,47 +102,19 @@ TupleType& Value::GetTuple() {
 }
 
 bool Value::GetBool() {
-    Value *v = Calculate();
-    switch (v->type) {
-        case ValueTypes::Default:
-            return v->GetValue();
-        case ValueTypes::Tuple:
-            return v->GetTuple().size();
-        default: return false;
-    }
+    return value->ToBool();
 }
 
 Value::operator std::string() { 
-    std::ostringstream os;
-
-    switch (type) {
-        case ValueTypes::Default: os << GetValue(); break;
-        case ValueTypes::Address: os << std::string(GetAddress()); break;
-        case ValueTypes::Tuple: os << std::string(GetTuple()) ; break;
-        case ValueTypes::Undefined: os << "?"; break;
-        default: os << "???"; break;
-    }
-    // os << ":" << value;
-    return os.str(); 
+    return std::string(*value);
 }
 
 std::string Value::str() { 
-    std::ostringstream os;
-    switch (type) {
-        case ValueTypes::Default: 
-        case ValueTypes::Address: 
-            os << (char)(GetValue()); break;
-        case ValueTypes::Tuple: 
-            os << GetTuple().str();
-        break;
-        case ValueTypes::Undefined: os << " "; break;
-        default: os << "?"; break;
-    }
-    return os.str(); 
+    return value->str();
 }
 
 void Value::Delete(Value *value) {
-    if (!value->IsLinkedToVariable())
+    if (!value->IsReferenced())
         delete value;
 }
 
@@ -165,6 +131,8 @@ Value *AddressType::Run(Values::Value *arguments) {
     return (new Context(context_, this->position, arguments))->Run();
 }
 
+AbstractValue* AddressType::Calculate() { return Run()->value->Calculate(); };
+
 AddressType::operator std::string() const { 
     std::ostringstream os; 
     os << "<" << this->position << ">";
@@ -175,17 +143,7 @@ AddressType::operator std::string() const {
     return os.str();
 };
 
-TupleType::TupleType(std::initializer_list<Value*> init, Value*value) : std::list<Value*>(init) {
-    if (value) {
-        Link(value);
-    }
-};
-
-void TupleType::Link(Value *parent_value) {
-    if (parent_value->IsLinkedToVariable()) {
-        for (auto el: *this) el->LinkToVariable(parent_value);
-    }
-}
+TupleType::TupleType(std::initializer_list<Value*> init/*, Value*value*/) : std::list<Value*>(init) {};
 
 TupleType::operator std::string() const { 
     std::ostringstream os; 
@@ -195,7 +153,7 @@ TupleType::operator std::string() const {
     return os.str();
 };
 
-std::string TupleType::str() const { 
+std::string TupleType::str() { 
     std::ostringstream os; 
     for (auto el: *this) os << el->str(); 
     return os.str();
@@ -209,7 +167,7 @@ TupleType &TupleType::operator+ (TupleType &other) {
 Value *TupleType::operator[] (int index) {
     if (index < 0) index = this->size() + index;
     if (index < 0 || index >= this->size()) {
-        throw std::runtime_error("Exec: Index out of range"); 
+        throw std::runtime_error("Exec: Index " + std::to_string(index) + " out of range"); 
     }
     Values::TupleType::iterator it = this->begin();
     std::advance(it, index);
